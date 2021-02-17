@@ -1,7 +1,12 @@
-{-Pkd projekt Henrik Jädersten, Nils Hartman, Albin Bergkbist}
+{-Pkd projekt Henrik Jädersten, Nils Hartman, Albin Bergkbist-}
 
-{testar att ändra i filen igen-}
+type Board = [(Grid,Square)]
 
-{-HJ Test-}
+type Grid = (Int,Int)
 
-{-NH Test nummer två - }
+data Square = Empty | Piece Type Color
+
+data Type = K | Q | R | B | N | P
+
+data Color = Black | White
+
