@@ -27,29 +27,29 @@ newGame = [ [((1,8),(Piece R Black)) , ((2,8),(Piece N Black)) , ((3,8),(Piece B
             [((1,1),(Piece R White)) , ((2,1),(Piece N White)) , ((3,1),(Piece B White)) , ((4,1),(Piece K White)) , ((5,1),(Piece Q White)) , ((6,1),(Piece B White)) , ((7,1),(Piece N White)) , ((8,1),(Piece R White))] ]
 
 
-
-
 printBoard :: Board -> IO()
-printBoard board = mapM_ putStrLn $ map (intercalate " ") $ icons $ second board
+printBoard board = mapM_ putStrLn $ gridNum $ map (intercalate " ") $ icons $ second board
     where
         second board = map (map snd) board
-        icons board = map (map printIcon) board   
+        icons board = map (map printIcon) board ++ [[" ","A","B","C","D","E","F","G","H"]]
+        gridNum [x] = [x]
+        gridNum (x:xs) = ((show (length (x:xs) -1) ) ++ " " ++ x) : (gridNum xs)
 
 
 printIcon :: Square -> String
-printIcon Empty = {-putStrlLn-} "□"
-printIcon (Piece K White) = {-putStrlLn-} "♚"
-printIcon (Piece Q White) = {-putStrlLn-} "♛"
-printIcon (Piece R White) = {-putStrlLn-} "♜"
-printIcon (Piece B White) = {-putStrlLn-} "♝"
-printIcon (Piece N White) = {-putStrlLn-} "♞"
-printIcon (Piece P White) = {-putStrlLn-} "♟"
-printIcon (Piece K Black) = {-putStrlLn-} "♔"
-printIcon (Piece Q Black) = {-putStrlLn-} "♕"
-printIcon (Piece R Black) = {-putStrlLn-} "♖"
-printIcon (Piece B Black) = {-putStrlLn-} "♗"
-printIcon (Piece N Black) = {-putStrlLn-} "♘"
-printIcon (Piece P Black) = {-putStrlLn-} "♙"
+printIcon Empty = "+" --"□"
+printIcon (Piece K White) = "♚"
+printIcon (Piece Q White) = "♛"
+printIcon (Piece R White) = "♜"
+printIcon (Piece B White) = "♝"
+printIcon (Piece N White) = "♞"
+printIcon (Piece P White) = "♟"
+printIcon (Piece K Black) = "♔"
+printIcon (Piece Q Black) = "♕"
+printIcon (Piece R Black) = "♖"
+printIcon (Piece B Black) = "♗"
+printIcon (Piece N Black) = "♘"
+printIcon (Piece P Black) = "♙"
 
 
 move :: Grid -> Grid -> Board -> Board
