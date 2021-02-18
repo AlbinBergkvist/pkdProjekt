@@ -37,7 +37,7 @@ printBoard board = mapM_ putStrLn $ gridNum $ map (intercalate " ") $ icons $ se
 
 
 printIcon :: Square -> String
-printIcon Empty = "+" --"□"
+printIcon Empty = "-" --"□"
 printIcon (Piece K White) = "♚"
 printIcon (Piece Q White) = "♛"
 printIcon (Piece R White) = "♜"
