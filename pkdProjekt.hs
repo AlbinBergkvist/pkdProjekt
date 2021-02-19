@@ -30,8 +30,8 @@ fromBoardtoBoardList :: Board -> [Board]
 fromBoardtoBoardList [] = []
 fromBoardtoBoardList board = (take 8 board) : fromBoardtoBoardList (drop 8 board)
 
-printBoard :: [Board] -> IO()
-printBoard board = mapM_ putStrLn $ gridNum $ map (intercalate " ") $ icons $ second board
+printBoard :: Board -> IO()
+printBoard board = mapM_ putStrLn $ gridNum $ map (intercalate " ") $ icons $ second $ fromBoardtoBoardList board
     where
         second board = map (map snd) board
         icons board = map (map printIcon) board ++ [[" ","A","B","C","D","E","F","G","H"]]
@@ -55,23 +55,9 @@ printIcon (Piece N Black) = "N" --"♘"
 printIcon (Piece P Black) = "P" --"♙"
 
 
-move :: Grid -> Grid -> Board -> Board
-move = undefined
 
 
-availableSquare :: Square -> Bool
-availableSquare Empty = False
-availableSquare (Piece _ _) = True
-
-
-validMove :: Square -> Board -> [Grid]
-validMove = undefined
-
-
-victory :: Board -> Bool
-victory = undefined
-
-
+-- Nils är snart klar med denna del
 pieceMove :: Square -> Board -> Grid -> [Grid]
 pieceMove Empty _ _= error "not a piece"
 pieceMove (Piece K color) b (x,y) = validK b color $[(x,y) | x <- [x-1,x,x+1] , y <- [y-1,y,y+1] ]
@@ -97,20 +83,49 @@ pieceMove (Piece Q color) b (x,y) =     right b color (x,y) ++
                                 downRight b color (x,y) = if getColor (snd (findSquare (x-1,y+1) b )) == color then [] else (x-1,y+1) : downRight b color (x-1 ,y+1) 
                                 upLeft b color (x,y) = if getColor (snd (findSquare (x+1,y-1) b )) == color then [] else (x+1,y-1) : upLeft b color (x+1 ,y-1) 
                                 upRight b color (x,y) = if getColor (snd (findSquare (x+1,y+1) b )) == color then [] else (x+1,y+1) : right b color (x+1 ,y+1) 
-                            
-
-
 pieceMove (Piece B color) b (x,y) = undefined
 pieceMove (Piece N color) b (x,y) = undefined
 pieceMove (Piece R color) b (x,y) = undefined
 pieceMove (Piece P color) b (x,y) = undefined
-
 
 findSquare :: Grid -> Board -> (Grid, Square)
 findSquare g [b] = b
 findSquare g (b:bs) | g == fst b = b
                     | otherwise = findSquare g bs
 
+
+findSquare' :: Grid -> Board -> (Grid,Square)
+findSquare' g b = b !!  (((8-(snd g))*8 + (fst g)) -1)
+
 getColor :: Square -> Color
 getColor Empty = None
 getColor (Piece _ c) = c
+
+
+-- Ta in startGrid och desiredMove , originalMove
+-- Ge ut den uppdaterade Board
+
+--Inte än gjorda funktioner
+move :: Grid -> Grid -> Board -> Board
+move = undefined
+
+
+availableSquare :: Square -> Bool
+availableSquare Empty = False
+availableSquare (Piece _ _) = True
+
+
+validMove :: Square -> Board -> [Grid]
+validMove = undefined
+
+
+victory :: Board -> Bool
+victory = undefined
+
+
+{-move :: Board -> Grid -> Grid -> Board
+move [] = []
+move (b:bs) moveTo moveFrom   | fst b == moveTo = put in piece
+                                | fst b == moveFrom = put in Empty
+                                | otherwise =move bs moveTo moveFrom
+                                -}
