@@ -12,8 +12,7 @@ data Type = K | Q | R | B | N | P deriving(Eq,Show)
 
 data Color = Black | White | None deriving(Eq,Show)
 
-play :: IO()
-play = undefined
+
 
 
 newGame :: Board
@@ -129,3 +128,6 @@ move (b:bs) moveTo moveFrom   | fst b == moveTo = put in piece
                                 | fst b == moveFrom = put in Empty
                                 | otherwise =move bs moveTo moveFrom
                                 -}
+                                
+play :: IO()
+play = undefined
