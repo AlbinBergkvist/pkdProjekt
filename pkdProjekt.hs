@@ -9,7 +9,7 @@ data Square = Empty | Piece Type Color deriving(Eq, Show)
 
 data Type = K | Q | R | B | N | P deriving(Eq, Show)
 
-data Color = Black | White deriving(Eq, Show)
+data Color = Black | White | None deriving(Eq, Show)
 
 
 newGame :: Board
@@ -53,18 +53,26 @@ pieceMove (Piece K color) b (x,y) = validK b color $[(x,y) | x <- [x-1,x,x+1] , 
                                     validK _ _ [] = []
                                     validK b color (x:xs)   | getColor (snd(findSquare x b)) == color = validK b color xs
                                                             | otherwise = x : validK b color xs
-pieceMove (Piece Q color) b (x,y) =   [(x,y) | x <- [1..8] ] ++ 
-                                [(x,y) | y <- [1..8] ] ++ diagonalmin (x,y) ++ diagonalmax (x,y)
+pieceMove (Piece Q color) b (x,y) =     right b color (x,y) ++
+                                        left b color (x,y) ++
+                                        up b color (x,y) ++
+                                        down b color (x,y) ++ 
+                                        downLeft b color (x,y) ++ 
+                                        downRight b color (x,y) ++ 
+                                        upLeft b color (x,y) ++ 
+                                        upRight b color (x,y)
                                 where   
-            diagonalmin :: (Int,Int) -> [(Int,Int)]
-            diagonalmin (x,y)   | y == 1 || x == 1 = diagonallist1 (x,y) 
-                                | otherwise = diagonalmin (x-1 , y-1)
-            diagonallist1 (x,y) | y == 8 || x == 8 = (x,y) : []
-                                | otherwise = (x,y) : diagonallist1 (x+1,y+1)
-            diagonalmax (x,y)   | y == 1 || x == 8 = diagonallist2 (x,y)
-                                | otherwise = diagonalmax (x+1,y-1)
-            diagonallist2 (x,y) | y == 8 || x == 1 = (x,y) : []
-                                | otherwise = diagonallist2 (x-1,y+1)
+                                right b color (x,y) = if getColor (snd (findSquare (x+1,y) b )) == color then [] else (x+1,y) : right b color (x+1 ,y) 
+                                left b color (x,y) = if getColor (snd (findSquare (x-1,y) b )) == color then [] else (x-1,y) : left b color (x-1 ,y) 
+                                up b color (x,y) = if getColor (snd (findSquare (x, y+1) b )) == color then [] else (x, y+1) : up b color (x, y+1) 
+                                down b color (x,y) = if getColor (snd (findSquare (x, y-1) b )) == color then [] else (x, y-1) : down b color (x ,y-1) 
+                                downLeft b color (x,y) = if getColor (snd (findSquare (x-1 , y-1) b )) == color then [] else (x-1 , y-1) : downLeft b color (x-1 , y-1) 
+                                downRight b color (x,y) = if getColor (snd (findSquare (x-1,y+1) b )) == color then [] else (x-1,y+1) : downRight b color (x-1 ,y+1) 
+                                upLeft b color (x,y) = if getColor (snd (findSquare (x+1,y-1) b )) == color then [] else (x+1,y-1) : upLeft b color (x+1 ,y-1) 
+                                upRight b color (x,y) = if getColor (snd (findSquare (x+1,y+1) b )) == color then [] else (x+1,y+1) : right b color (x+1 ,y+1) 
+                            
+
+
 pieceMove (Piece B color) b (x,y) = undefined
 pieceMove (Piece N color) b (x,y) = undefined
 pieceMove (Piece R color) b (x,y) = undefined
@@ -77,6 +85,7 @@ findSquare g (b:bs) | g == fst b = b
                     | otherwise = findSquare g bs
 
 getColor :: Square -> Color
+getColor Empty = None
 getColor (Piece _ c) = c
 
 availableSquare :: Square -> Bool
