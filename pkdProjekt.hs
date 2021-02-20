@@ -1,6 +1,7 @@
 {-Pkd projekt Henrik Jädersten, Nils Hartman, Albin Bergkvist-}
 
 import Data.List
+import Data.Char
 
 type Board = [(Grid,Square)]
 
@@ -46,12 +47,12 @@ printIcon (Piece R White) = "R" --"♜"
 printIcon (Piece B White) = "B" --"♝"
 printIcon (Piece N White) = "N" --"♞"
 printIcon (Piece P White) = "P" --"♟"
-printIcon (Piece K Black) = "K" --"♔"
-printIcon (Piece Q Black) = "Q" --"♕"
-printIcon (Piece R Black) = "R" --"♖"
-printIcon (Piece B Black) = "B" --"♗"
-printIcon (Piece N Black) = "N" --"♘"
-printIcon (Piece P Black) = "P" --"♙"
+printIcon (Piece K Black) = "k" --"♔"
+printIcon (Piece Q Black) = "q" --"♕"
+printIcon (Piece R Black) = "r" --"♖"
+printIcon (Piece B Black) = "b" --"♗"
+printIcon (Piece N Black) = "n" --"♘"
+printIcon (Piece P Black) = "p" --"♙"
 
 
 
@@ -87,6 +88,7 @@ pieceMove (Piece N color) b (x,y) = undefined
 pieceMove (Piece R color) b (x,y) = undefined
 pieceMove (Piece P color) b (x,y) = undefined
 
+
 findSquare :: Grid -> Board -> (Grid, Square)
 findSquare g [b] = b
 findSquare g (b:bs) | g == fst b = b
@@ -101,12 +103,12 @@ getColor Empty = None
 getColor (Piece _ c) = c
 
 
--- Ta in startGrid och desiredMove , originalMove
--- Ge ut den uppdaterade Board
-
 --Inte än gjorda funktioner
-move :: Grid -> Grid -> Board -> Board
-move = undefined
+move :: Grid -> Grid -> Board -> Board -> Board
+move _ _ _ [] = []
+move currentP newP refBoard (b:bs) | (fst b) == currentP = (currentP,Empty) : move currentP newP refBoard bs
+                                   | (fst b) == newP     = (newP, (snd (findSquare' currentP refBoard))) : move currentP newP refBoard bs
+                                   | otherwise           = b : move currentP newP refBoard bs
 
 
 availableSquare :: Square -> Bool
@@ -121,13 +123,6 @@ validMove = undefined
 victory :: Board -> Bool
 victory = undefined
 
-
-{-move :: Board -> Grid -> Grid -> Board
-move [] = []
-move (b:bs) moveTo moveFrom   | fst b == moveTo = put in piece
-                                | fst b == moveFrom = put in Empty
-                                | otherwise =move bs moveTo moveFrom
-                                -}
                                 
 play :: IO()
 play = undefined
