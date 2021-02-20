@@ -119,9 +119,22 @@ validMove = undefined
 
 
 
+
+
 {- Jag tänker att man måste ha en check för draw och victory, draw sker när man inte "kan" göra några moves men inte heller är i schack. Victory när kungen är i schack
 och inte kan röra sig
 Vet ej om man ska lösa detta med att lägga in en check vid varje move man gör som tittar om motståndarens kung är i check
+
+Man skulle nog lättare kunna göra en "lost" funktion istället i början av sin tur,
+
+Stora hindret är nog "check" funktionen, för den måste hindra en från att göra vissa moves som sätter sin kung i check, då i validmove. 
+sen måste om man är i check och man inte kan göra ett move som tar sig ur check, då blir det victory. 
+
+På något sätt måste man itterera genom alla pjäser och på så sätt se alla möjligheter som finns.
+
+draw funktionen är egentligen väldigt lätt att lägga in, kanske lite olika implementation beroende på hur valid move kommer att se ut. 
+Draw sker när ena spelaren inte kan göra ett drag, MEN inte är i shack. Så en lösning på det är väll bara att checka med valid move om det 
+finns något drag att göra annars Draw.
  -}
 victory :: Board -> Bool
 victory = undefined
@@ -131,6 +144,13 @@ draw = undefined
 
 check :: Board -> Bool
 check = undefined
+
+
+
+
+
+
+
 
 
 {-move :: Board -> Grid -> Grid -> Board
