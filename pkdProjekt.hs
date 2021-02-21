@@ -123,6 +123,6 @@ validMove = undefined
 victory :: Board -> Bool
 victory = undefined
 
-                                
+
 play :: IO()
 play = undefined
