@@ -16,7 +16,7 @@ data Color = Black | White | None deriving(Eq,Show)
 
 
 newGame :: Board
-newGame = [ ((1,8),(Piece R Black)) , ((2,8),(Piece N Black)) , ((3,8),(Piece B Black)) , ((4,8),(Piece K Black)) , ((5,8),(Piece Q Black)) , ((6,8),(Piece B Black)) , ((7,8),(Piece N Black)) , ((8,8),(Piece R Black)),
+newGame = [ ()(1,8),(Piece R Black) , ((2,8),(Piece N Black)) , ((3,8),(Piece B Black)) , ((4,8),(Piece K Black)) , ((5,8),(Piece Q Black)) , ((6,8),(Piece B Black)) , ((7,8),(Piece N Black)) , ((8,8),(Piece R Black)),
             ((1,7),(Piece P Black)) , ((2,7),(Piece P Black)) , ((3,7),(Piece P Black)) , ((4,7),(Piece P Black)) , ((5,7),(Piece P Black)) , ((6,7),(Piece P Black)) , ((7,7),(Piece P Black)) , ((8,7),(Piece P Black)),
             ((1,6),(Empty)) , ((2,6),(Empty)) , ((3,6),(Empty)) , ((4,6),(Empty)) , ((5,6),(Empty)) , ((6,6),(Empty)) , ((7,6),(Empty)) , ((8,6),(Empty)) ,
             ((1,5),(Empty)) , ((2,5),(Empty)) , ((3,5),(Empty)) , ((4,5),(Empty)) , ((5,5),(Empty)) , ((6,5),(Empty)) , ((7,5),(Empty)) , ((8,5),(Empty)) , 
@@ -121,29 +121,39 @@ validMove = undefined
 
 
 
-{- Jag tänker att man måste ha en check för draw och victory, draw sker när man inte "kan" göra några moves men inte heller är i schack. Victory när kungen är i schack
-och inte kan röra sig
-Vet ej om man ska lösa detta med att lägga in en check vid varje move man gör som tittar om motståndarens kung är i check
+{-Här måste avMoves bytas ut till en lista med tillgängliga moves (som är legal) possibly behövs
+det skiljas på ens egna moves och motståndarens, men det bör lätt att se när vi väl implementerar
 
-Man skulle nog lättare kunna göra en "lost" funktion istället i början av sin tur,
+det behövs även en funktion för att göra en lista med alla pjäser som fortfarande är i spel för
+detta att fungera  -}
 
-Stora hindret är nog "check" funktionen, för den måste hindra en från att göra vissa moves som sätter sin kung i check, då i validmove. 
-sen måste om man är i check och man inte kan göra ett move som tar sig ur check, då blir det victory. 
+victory :: Board -> Color -> Bool
+victory board f = if (check board f) == True && avMoves == [] then True else False
 
-På något sätt måste man itterera genom alla pjäser och på så sätt se alla möjligheter som finns.
+draw :: Board -> Color -> Bool
+draw board f = if (check board f) == False && avMoves == [] then True else False
 
-draw funktionen är egentligen väldigt lätt att lägga in, kanske lite olika implementation beroende på hur valid move kommer att se ut. 
-Draw sker när ena spelaren inte kan göra ett drag, MEN inte är i shack. Så en lösning på det är väll bara att checka med valid move om det 
-finns något drag att göra annars Draw.
- -}
-victory :: Board -> Bool
-victory = undefined
 
-draw :: Board -> Bool
-draw = undefined 
 
-check :: Board -> Bool
-check = undefined
+avMoves = [(1,1),(1,2),(4,8)] -- som ska ersättas med lista med alla pjäsers avaliable moves
+check :: Board -> Color -> Bool
+check board f = eqMoves (kingFinder board f) avMoves
+
+eqMoves :: Grid -> [Grid] -> Bool
+eqMoves king [] = False
+eqMoves king (x:xs) = if king == x then True else eqMoves king xs
+
+
+kingFinder :: Board -> Color -> Grid
+kingFinder ((t,Piece K White):xs) White = t
+kingFinder ((t,Piece K Black):xs) Black = t
+kingFinder (_:xs) f = kingFinder xs f
+        
+
+
+
+
+
 
 
 
