@@ -151,7 +151,10 @@ kingFinder ((t,Piece K Black):xs) Black = t
 kingFinder (_:xs) f = kingFinder xs f
         
 
-
+listPieces :: Board -> Board --ska användas för att få vilka pieces som validmoves ska använda
+listPieces [] = []           --skulle kunna göras till color specific
+listPieces ((g,Piece t c):xs) = (g,Piece t c) : listPieces xs
+listPieces (_:xs) = listPieces xs
 
 
 
