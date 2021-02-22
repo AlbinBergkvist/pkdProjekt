@@ -128,14 +128,15 @@ det behövs även en funktion för att göra en lista med alla pjäser som fortf
 detta att fungera  -}
 
 victory :: Board -> Color -> Bool
-victory board f = if (check board f) == True && avMoves == [] then True else False
+victory board f = if (check board f) == True && egenavMoves == [] then True else False
 
 draw :: Board -> Color -> Bool
-draw board f = if (check board f) == False && avMoves == [] then True else False
+draw board f = if (check board f) == False && egenavMoves == [] then True else False
 
+                        -- listorna nedanför är alltså funktioner
+egenavMoves = [Grid]     -- bytas till lista med ens egens pjäsers avaiable move, hänsyn till check
+avMoves = [(1,1),(1,2),(4,8)] -- lista med motståndares pjäsers avaliable moves
 
-
-avMoves = [(1,1),(1,2),(4,8)] -- som ska ersättas med lista med alla pjäsers avaliable moves
 check :: Board -> Color -> Bool
 check board f = eqMoves (kingFinder board f) avMoves
 
