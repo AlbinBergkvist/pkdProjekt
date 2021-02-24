@@ -14,8 +14,6 @@ data Type = K | Q | R | B | N | P deriving(Eq,Show)
 data Color = Black | White | None deriving(Eq,Show)
 
 
-
-
 newGame :: Board
 newGame = [ ((1,8),(Piece R Black)) , ((2,8),(Piece N Black)) , ((3,8),(Piece B Black)) , ((4,8),(Piece K Black)) , ((5,8),(Piece Q Black)) , ((6,8),(Piece B Black)) , ((7,8),(Piece N Black)) , ((8,8),(Piece R Black)),
             ((1,7),(Piece P Black)) , ((2,7),(Piece P Black)) , ((3,7),(Piece P Black)) , ((4,7),(Piece P Black)) , ((5,7),(Piece P Black)) , ((6,7),(Piece P Black)) , ((7,7),(Piece P Black)) , ((8,7),(Piece P Black)),
@@ -26,9 +24,11 @@ newGame = [ ((1,8),(Piece R Black)) , ((2,8),(Piece N Black)) , ((3,8),(Piece B 
             ((1,2),(Piece P White)) , ((2,2),(Piece P White)) , ((3,2),(Piece P White)) , ((4,2),(Piece P White)) , ((5,2),(Piece P White)) , ((6,2),(Piece P White)) , ((7,2),(Piece P White)) , ((8,2),(Piece P White)),
             ((1,1),(Piece R White)) , ((2,1),(Piece N White)) , ((3,1),(Piece B White)) , ((4,1),(Piece K White)) , ((5,1),(Piece Q White)) , ((6,1),(Piece B White)) , ((7,1),(Piece N White)) , ((8,1),(Piece R White)) ]
 
+
 fromBoardtoBoardList :: Board -> [Board]
 fromBoardtoBoardList [] = []
 fromBoardtoBoardList board = (take 8 board) : fromBoardtoBoardList (drop 8 board)
+
 
 printBoard :: Board -> IO()
 printBoard board = mapM_ putStrLn $ gridNum $ map (intercalate " ") $ icons $ second $ fromBoardtoBoardList board
@@ -55,9 +55,6 @@ printIcon (Piece N Black) = "n" --"♘"
 printIcon (Piece P Black) = "p" --"♙"
 
 
-
-
--- Nils är snart klar med denna del
 pieceMove :: Square -> Board -> Grid -> [Grid]
 pieceMove Empty _ _= error "not a piece"
 pieceMove (Piece K color) b (x,y) = validK b color $[(x,y) | x <- [x-1,x,x+1] , y <- [y-1,y,y+1] ]
@@ -118,7 +115,6 @@ pawnMoveDiagonal b color (x,y) = if color == White then
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-
 findSquare :: Grid -> Board -> (Grid, Square)
 findSquare g [b] = b
 findSquare g (b:bs) | g == fst b = b
@@ -128,14 +124,20 @@ findSquare g (b:bs) | g == fst b = b
 findSquare' :: Grid -> Board -> (Grid,Square)
 findSquare' g b = b !!  (((8-(snd g))*8 + (fst g)) -1)
 
+
 getColor :: Square -> Color
 getColor Empty = None
 getColor (Piece _ c) = c
 
+
 getColor' :: Grid -> Board -> Color
 getColor' (x,y) b = getColor (snd (findSquare (x,y) b))
 
---Inte än gjorda funktioner
+
+getPiece :: Grid -> Board -> Square
+getPiece grid board = snd $ findSquare' grid board
+
+
 move :: Grid -> Grid -> Board -> Board -> Board
 move _ _ _ [] = []
 move currentP newP refBoard (b:bs) | (fst b) == currentP = (currentP,Empty) : move currentP newP refBoard bs
@@ -156,5 +158,93 @@ victory :: Board -> Bool
 victory = undefined
 
 
-play :: IO()
-play = undefined
+inputToGrid :: String -> Grid
+inputToGrid (x:y:_)
+    | x == 'a' || x == 'A' = (1,digitToInt y)
+    | x == 'b' || x == 'B' = (2,digitToInt y)
+    | x == 'c' || x == 'C' = (3,digitToInt y)
+    | x == 'd' || x == 'D' = (4,digitToInt y)
+    | x == 'e' || x == 'E' = (5,digitToInt y)
+    | x == 'f' || x == 'F' = (6,digitToInt y)
+    | x == 'g' || x == 'G' = (7,digitToInt y)
+    | x == 'h' || x == 'H' = (8,digitToInt y)
+
+
+isWhite :: Square -> Bool
+isWhite (Piece _ White) = True
+isWhite  _ = False
+
+
+isBlack :: Square -> Bool
+isBlack (Piece _ Black) = True
+isBlack _ = False
+
+
+play :: Color -> Board -> IO ()
+play color boardState = do
+    printBoard boardState
+    p <- choosePiece color boardState
+    let piece = p
+    np <- chooseMove piece boardState
+    let newPosition = np
+        updatedBoard = move piece newPosition boardState boardState
+    if color == White
+        then
+            play Black updatedBoard
+        else
+            play White updatedBoard
+
+chooseMove :: Grid -> Board -> IO Grid
+chooseMove piece boardState = do
+    putStrLn "Select where to place the piece:"
+    n <- getLine
+    let newPosition = inputToGrid n
+    if elem newPosition (pieceMove (getPiece piece newGame) newGame piece) == False
+        then do
+            putStrLn "Not a valid move for chosen piece. Please select a new move"
+            chooseMove piece boardState
+        else do
+            return newPosition
+    
+
+choosePiece :: Color -> Board -> IO Grid
+choosePiece color boardState = do
+    if color == White
+        then do
+            putStrLn "White's turn. Please select a piece to move:"
+        else do
+            putStrLn "Black's turn. Please select a piece to move:"
+    p <- getLine
+    let piece = inputToGrid p
+    if validInput p == False
+        then do
+            putStrLn "Invalid input. Must be letter A-H and number 1-8 in form letter+number ex. b3 or E5"
+            choosePiece color boardState
+        else do
+            if color == White
+                then do
+                    if (isWhite $ snd $ findSquare' piece boardState) == False
+                        then do
+                            let grid = (toUpper $ head p) : tail p
+                            putStrLn $ "No white piece at " ++ grid ++ ". Please select a new piece to move."
+                            choosePiece White boardState
+                        else do
+                            return piece
+                else do
+                    if (isBlack $ snd $ findSquare' piece boardState) == False
+                        then do
+                            let grid = (toUpper $ head p) : tail p
+                            putStrLn $ "No black piece at " ++ grid ++ ". PLease selecta new piece to move."
+                            choosePiece Black boardState
+                        else do
+                            return piece
+
+
+validInput :: String -> Bool
+validInput (x:y:z) | elem x ['A'..'H'] || elem x ['a'..'h'] && elem y ['1'..'8'] && z == [] = True
+                   | otherwise = False
+
+
+main :: IO ()
+main = do
+    play White newGame
