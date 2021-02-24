@@ -73,20 +73,50 @@ pieceMove (Piece Q color) b (x,y) =     right b color (x,y) ++
                                         downLeft b color (x,y) ++ 
                                         downRight b color (x,y) ++ 
                                         upLeft b color (x,y) ++ 
+                                        upRight b color (x,y)     
+
+pieceMove (Piece B color) b (x,y) =     downLeft b color (x,y) ++
+                                        downRight b color (x,y) ++ 
+                                        upLeft b color (x,y) ++ 
                                         upRight b color (x,y)
-                                where   
-                                right b color (x,y) = if getColor (snd (findSquare (x+1,y) b )) == color then [] else (x+1,y) : right b color (x+1 ,y) 
-                                left b color (x,y) = if getColor (snd (findSquare (x-1,y) b )) == color then [] else (x-1,y) : left b color (x-1 ,y) 
-                                up b color (x,y) = if getColor (snd (findSquare (x, y+1) b )) == color then [] else (x, y+1) : up b color (x, y+1) 
-                                down b color (x,y) = if getColor (snd (findSquare (x, y-1) b )) == color then [] else (x, y-1) : down b color (x ,y-1) 
-                                downLeft b color (x,y) = if getColor (snd (findSquare (x-1 , y-1) b )) == color then [] else (x-1 , y-1) : downLeft b color (x-1 , y-1) 
-                                downRight b color (x,y) = if getColor (snd (findSquare (x-1,y+1) b )) == color then [] else (x-1,y+1) : downRight b color (x-1 ,y+1) 
-                                upLeft b color (x,y) = if getColor (snd (findSquare (x+1,y-1) b )) == color then [] else (x+1,y-1) : upLeft b color (x+1 ,y-1) 
-                                upRight b color (x,y) = if getColor (snd (findSquare (x+1,y+1) b )) == color then [] else (x+1,y+1) : right b color (x+1 ,y+1) 
-pieceMove (Piece B color) b (x,y) = undefined
-pieceMove (Piece N color) b (x,y) = undefined
-pieceMove (Piece R color) b (x,y) = undefined
-pieceMove (Piece P color) b (x,y) = undefined
+
+pieceMove (Piece R color) b (x,y) =     right b color (x,y) ++ 
+                                        left b color (x,y) ++ 
+                                        up b color (x,y) ++ 
+                                        down b color (x,y)         
+
+pieceMove (Piece N color) b (x,y) = knightMoves b color (x,y)
+pieceMove (Piece P color) b (x,y) = pawnMoveDiagonal b color (x,y) ++
+                                    pawnMoveStraight b color (x,y)
+
+--------------------------------------------------------------{-All the moves-}------------------------------------------------------------------------------------------
+right b color (x,y) = if getColor' (x+1,y) b  == color then [] else if getColor' (x+1,y) b == None then (x+1,y) : right b color (x+1 ,y)    else [(x+1,y)]
+left b color (x,y) = if getColor' (x-1,y) b == color then [] else if getColor' (x-1,y) b == None then  (x-1,y) : left b color (x-1 ,y)        else [(x-1,y)]
+up b color (x,y) = if getColor' (x,y+1) b == color then [] else if getColor' (x,y+1) b == None then (x, y+1) : up b color (x, y+1)          else [(x,y+1)]
+down b color (x,y) = if getColor' (x,y-1) b == color then [] else if getColor' (x,y-1) b == None then (x, y-1) : down b color (x ,y-1)       else [(x,y-1)]
+downLeft b color (x,y) = if getColor'(x-1 , y-1) b == color then [] else if getColor' (x-1,y-1) b == None then (x-1 , y-1) : downLeft b color (x-1 , y-1) else [(x-1,y-1)]
+downRight b color (x,y) = if getColor' (x-1,y+1) b == color then [] else if getColor' (x-1,y+1) b == None then (x-1,y+1) : downRight b color (x-1 ,y+1) else [(x-1,y+1)]
+upLeft b color (x,y) = if getColor' (x+1,y-1) b == color then [] else if getColor' (x+1,y-1) b == None then (x+1,y-1) : upLeft b color (x+1 ,y-1) else [(x+1,y-1)]
+upRight b color (x,y) = if getColor' (x+1,y+1) b  == color then [] else if getColor' (x+1,y+1) b == None then (x+1,y+1) : right b color (x+1 ,y+1) else [(x+1,y+1)]
+knightMoves b color (x,y) = knightMoves' b color (x,y) knightList 
+    where 
+        knightMoves' _ _ _ [] = []
+        knightMoves' b color (x,y) (l:ls) = if getColor' (x+ (fst l) , y+ (snd l)) b == color then [] ++ knightMoves' b color (x,y) ls else [(x+ (fst l) , y+ (snd l))] ++ knightMoves' b color (x,y) ls
+        knightList = [((-1),2), (1,2) , (2,1) , (2,(-1)) , (1,(-2)) , ((-1),(-2)) , ((-2),(-1)) , ((-2),1)]
+pawnMoveStraight b color (x,y) =    if color == White then if y == 2 then if getColor' (x,y+1) b == None then (x,y+1) : pawnMoveStraight b White (x,y+1) else []
+                                    else if getColor' (x,y+1) b == None then (x,y+1) : [] else []
+                                    else if  y == 7 then if getColor' (x,y-1) b == None then (x,y-1) : pawnMoveStraight b White (x,y-1) else []
+                                    else if getColor' (x,y-1) b == None then (x,y-1) : [] else []
+pawnMoveDiagonal b color (x,y) = if color == White then 
+                                    if getColor' (x+1,y+1) b == Black then if getColor' (x-1,y+1) b == Black then (x+1,y+1) : (x-1,y+1) : [] else (x+1,y+1) : []
+                                    else if getColor' (x-1,y+1) b == Black then if getColor' (x+1,y+1) b == Black then (x-1,y+1) : (x+1,y+1) : [] else (x-1,y+1) : []
+                                    else []
+                                    else      
+                                    if getColor' (x-1,y-1) b == White then if getColor' (x+1,y-1) b == White then (x+1,y-1) : (x-1,y-1) : [] else (x-1,y-1) : []
+                                    else if getColor' (x+1,y-1) b == White then if getColor' (x-1,y-1) b == White then (x+1,y-1) : (x-1,y-1) : [] else (x+1,y-1) : []
+                                    else []
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 
 findSquare :: Grid -> Board -> (Grid, Square)
@@ -102,6 +132,8 @@ getColor :: Square -> Color
 getColor Empty = None
 getColor (Piece _ c) = c
 
+getColor' :: Grid -> Board -> Color
+getColor' (x,y) b = getColor (snd (findSquare (x,y) b))
 
 --Inte än gjorda funktioner
 move :: Grid -> Grid -> Board -> Board -> Board
