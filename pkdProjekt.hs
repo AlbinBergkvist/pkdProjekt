@@ -182,6 +182,7 @@ isBlack _ = False
 
 play :: Color -> Board -> IO ()
 play color boardState = do
+    putStrLn ""
     printBoard boardState
     p <- choosePiece color boardState
     let piece = p
@@ -196,11 +197,13 @@ play color boardState = do
 
 chooseMove :: Grid -> Board -> IO Grid
 chooseMove piece boardState = do
+    putStrLn ""
     putStrLn "Select where to place the piece:"
     n <- getLine
     let newPosition = inputToGrid n
     if elem newPosition (pieceMove (getPiece piece newGame) newGame piece) == False
         then do
+            putStrLn ""
             putStrLn "Not a valid move for chosen piece. Please select a new move"
             chooseMove piece boardState
         else do
@@ -211,37 +214,55 @@ choosePiece :: Color -> Board -> IO Grid
 choosePiece color boardState = do
     if color == White
         then do
+            putStrLn ""
             putStrLn "White's turn. Please select a piece to move:"
         else do
+            putStrLn ""
             putStrLn "Black's turn. Please select a piece to move:"
     p <- getLine
-    let piece = inputToGrid p
     if validInput p == False
-        then do
-            putStrLn "Invalid input. Must be letter A-H and number 1-8 in form letter+number ex. b3 or E5"
-            choosePiece color boardState
+        then do putStrLn ""
+                putStrLn "Invalid input. Must be letter A-H and number 1-8 in form letter+number ex. b3 or E5"
+                choosePiece color boardState
         else do
-            if color == White
+            let piece = inputToGrid p
+            if getPiece piece boardState == Empty
                 then do
-                    if (isWhite $ snd $ findSquare' piece boardState) == False
-                        then do
-                            let grid = (toUpper $ head p) : tail p
-                            putStrLn $ "No white piece at " ++ grid ++ ". Please select a new piece to move."
-                            choosePiece White boardState
-                        else do
-                            return piece
+                    putStrLn ""
+                    putStrLn "You have chosen an empty square. Please select a new piece."
+                    choosePiece color boardState
                 else do
-                    if (isBlack $ snd $ findSquare' piece boardState) == False
+                    if (pieceMove (getPiece piece newGame) newGame piece) == []
                         then do
-                            let grid = (toUpper $ head p) : tail p
-                            putStrLn $ "No black piece at " ++ grid ++ ". PLease selecta new piece to move."
-                            choosePiece Black boardState
+                            putStrLn ""
+                            putStrLn "No available moves for chosen piece. Please select a new piece."
+                            choosePiece color boardState
                         else do
-                            return piece
+                            if color == White
+                                then do
+                                    if (isWhite $ snd $ findSquare' piece boardState) == False
+                                        then do
+                                            let grid = (toUpper $ head p) : tail p
+                                            putStrLn ""
+                                            putStrLn $ "No white piece at " ++ grid ++ ". Please select a new piece to move."
+                                            choosePiece White boardState
+                                        else do
+                                            return piece
+                                else do
+                                    if (isBlack $ snd $ findSquare' piece boardState) == False
+                                        then do
+                                            let grid = (toUpper $ head p) : tail p
+                                            putStrLn ""
+                                            putStrLn $ "No black piece at " ++ grid ++ ". PLease selecta new piece to move."
+                                            choosePiece Black boardState
+                                        else do
+                                            return piece
 
 
 validInput :: String -> Bool
-validInput (x:y:z) | elem x ['A'..'H'] || elem x ['a'..'h'] && elem y ['1'..'8'] && z == [] = True
+validInput [] = False
+validInput [_] = False
+validInput (x:y:z) | (elem x ['A'..'H'] || elem x ['a'..'h']) && elem y ['1'..'8'] && z == [] = True
                    | otherwise = False
 
 
