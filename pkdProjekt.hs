@@ -195,13 +195,14 @@ play color boardState = do
         else
             play White updatedBoard
 
+
 chooseMove :: Grid -> Board -> IO Grid
 chooseMove piece boardState = do
     putStrLn ""
     putStrLn "Select where to place the piece:"
     n <- getLine
     let newPosition = inputToGrid n
-    if elem newPosition (pieceMove (getPiece piece newGame) newGame piece) == False
+    if elem newPosition (pieceMove (getPiece piece boardState) boardState piece) == False
         then do
             putStrLn ""
             putStrLn "Not a valid move for chosen piece. Please select a new move"
@@ -232,7 +233,7 @@ choosePiece color boardState = do
                     putStrLn "You have chosen an empty square. Please select a new piece."
                     choosePiece color boardState
                 else do
-                    if (pieceMove (getPiece piece newGame) newGame piece) == []
+                    if (pieceMove (getPiece piece boardState) boardState piece) == []
                         then do
                             putStrLn ""
                             putStrLn "No available moves for chosen piece. Please select a new piece."
@@ -253,7 +254,7 @@ choosePiece color boardState = do
                                         then do
                                             let grid = (toUpper $ head p) : tail p
                                             putStrLn ""
-                                            putStrLn $ "No black piece at " ++ grid ++ ". PLease selecta new piece to move."
+                                            putStrLn $ "No black piece at " ++ grid ++ ". Please select a new piece to move."
                                             choosePiece Black boardState
                                         else do
                                             return piece
