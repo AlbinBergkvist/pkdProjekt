@@ -279,8 +279,8 @@ det behövs även en funktion för att göra en lista med alla pjäser som fortf
 detta att fungera  -}
 
 victory :: Board -> Color -> Bool
-victory board White = if (check board White) == True && (listToMoves board (listPieces board Black)) == [] then True else False
-victory board Black = if (check board Black) == True && (listToMoves board (listPieces board White)) == [] then True else False
+victory board White = if (check board Black) == True && (listToMoves board (listPieces board White)) == [] then True else False
+victory board Black = if (check board White) == True && (listToMoves board (listPieces board Black)) == [] then True else False
 
 draw :: Board -> Color -> Bool
 draw board White = if (check board White) == False && (listToMoves board (listPieces board Black)) == [] then True else False
