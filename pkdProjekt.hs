@@ -55,6 +55,13 @@ printIcon (Piece N Black) = "n" --"♘"
 printIcon (Piece P Black) = "p" --"♙"
 
 
+{- PieceMove piece board placement
+  lists all the available moves a specific piece have in a specific place on a specific board.
+  RETURN: All available grids the piece can move to on given Board.
+  EXAMPLES:
+  pieceMove (Piece P White) newGame (2,2) == [(2,3),(2,4)]
+  pieceMove (Piece K Black) newGame (5,8) == []
+-}
 
 pieceMove :: Square -> Board -> Grid -> [Grid]
 pieceMove Empty _ _= error "not a piece"
@@ -105,18 +112,17 @@ knightMoves b color (x,y) = knightMoves' b color (x,y) knightList
         knightList = [((-1),2), (1,2) , (2,1) , (2,(-1)) , (1,(-2)) , ((-1),(-2)) , ((-2),(-1)) , ((-2),1)]
 pawnMoveStraight b color (x,y) =    if color == White then if y == 2 then if getColor' (x,y+1) b == None then (x,y+1) : pawnMoveStraight b White (x,y+1) else []
                                     else if getColor' (x,y+1) b == None then (x,y+1) : [] else []
-                                    else if  y == 7 then if getColor' (x,y-1) b == None then (x,y-1) : pawnMoveStraight b White (x,y-1) else []
+                                    else if  y == 7 then if getColor' (x,y-1) b == None then (x,y-1) : pawnMoveStraight b Black (x,y-1) else []
                                     else if getColor' (x,y-1) b == None then (x,y-1) : [] else []
-pawnMoveDiagonal b color (x,y) = if color == White then 
-                                    if getColor' (x+1,y+1) b == Black then if getColor' (x-1,y+1) b == Black then (x+1,y+1) : (x-1,y+1) : [] else (x+1,y+1) : []
-                                    else if getColor' (x-1,y+1) b == Black then if getColor' (x+1,y+1) b == Black then (x-1,y+1) : (x+1,y+1) : [] else (x-1,y+1) : []
-                                    else []
-                                    else      
-                                    if getColor' (x-1,y-1) b == White then if getColor' (x+1,y-1) b == White then (x+1,y-1) : (x-1,y-1) : [] else (x-1,y-1) : []
-                                    else if getColor' (x+1,y-1) b == White then if getColor' (x-1,y-1) b == White then (x+1,y-1) : (x-1,y-1) : [] else (x+1,y-1) : []
-                                    else []
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pawnMoveDiagonal b White (x,y) = if getColor' (x+1,y+1) b == Black then [(x+1,y+1)] ++ pawnMoveDiagonal' b White else [] ++ pawnMoveDiagonal' b White
+  where 
+  pawnMoveDiagonal' b color = if getColor' (x-1,y+1) b == Black then [(x-1,y+1)] else []
 
+pawnMoveDiagonal b Black (x,y) = if getColor' (x+1,y-1) b == White then [(x+1,y-1)] ++ pawnMoveDiagonal' b Black else [] ++ pawnMoveDiagonal' b Black
+  where 
+  pawnMoveDiagonal' b color = if getColor' (x-1,y-1) b == White then [(x-1,y-1)] else []
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 findSquare :: Grid -> Board -> (Grid, Square)
 findSquare g [b] = b
