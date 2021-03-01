@@ -267,6 +267,64 @@ validInput (x:y:z) | (elem x ['A'..'H'] || elem x ['a'..'h']) && elem y ['1'..'8
                    | otherwise = False
 
 
+
+
+
+
+--xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx Albins Kod
+
+{-Här måste avMoves bytas ut till en lista med tillgängliga moves (som är legal) possibly behövs
+det skiljas på ens egna moves och motståndarens, men det bör lätt att se när vi väl implementerar
+det behövs även en funktion för att göra en lista med alla pjäser som fortfarande är i spel för
+detta att fungera  -}
+
+victory :: Board -> Color -> Bool
+victory board White = if (check board White) == True && (listToMoves board (listPieces board Black)) == [] then True else False
+victory board Black = if (check board Black) == True && (listToMoves board (listPieces board White)) == [] then True else False
+
+draw :: Board -> Color -> Bool
+draw board White = if (check board White) == False && (listToMoves board (listPieces board Black)) == [] then True else False
+draw board Black = if (check board Black) == False && (listToMoves board (listPieces board White)) == [] then True else False
+
+
+
+
+
+check :: Board -> Color -> Bool
+check board f = eqMoves (kingFinder board f) (listToMoves board (listPieces board f))
+
+--andra board är listan med pjäser
+listToMoves :: Board -> Board -> [Grid]
+listToMoves board [] = []
+listToMoves board (x:xs) = pieceMove (snd x) board (fst x) ++ listToMoves board xs
+
+eqMoves :: Grid -> [Grid] -> Bool
+eqMoves king [] = False
+eqMoves king (x:xs) = if king == x then True else eqMoves king xs
+
+
+kingFinder :: Board -> Color -> Grid
+kingFinder ((t,Piece K White):xs) White = t
+kingFinder ((t,Piece K Black):xs) Black = t
+kingFinder (_:xs) f = kingFinder xs f
+        
+
+listPieces :: Board -> Color -> Board --ska användas för att få vilka pieces som validmoves ska använda
+listPieces [] _ = []                 --skulle kunna göras till color specific
+listPieces ((g,Piece t White):xs) White = listPieces xs White
+listPieces ((g,Piece t Black):xs) Black = listPieces xs Black
+listPieces ((g,Piece t c):xs) f = (g,Piece t c) : listPieces xs f
+listPieces (_:xs) f = listPieces xs f
+
+-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+
+
+
+
+
+
 main :: IO ()
 main = do
     play White newGame
