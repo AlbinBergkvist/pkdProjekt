@@ -75,7 +75,7 @@ move currentP newP refBoard (b:bs) | (fst b) == currentP = (currentP,Empty) : mo
 
 pieceMove :: Square -> Board -> Grid -> [Grid]
 pieceMove Empty _ _= error "not a piece"
-pieceMove (Piece K color) b (x,y) = validK' (failSafe (validK b color $[(x,y) | x <- [x-1,x,x+1] , y <- [y-1,y,y+1]])) b color (x,y)
+pieceMove (Piece K color) b (x,y) = validK' (failSafe (validK b color $[(x,y) | x <- [x-1,x,x+1] , y <- [y-1,y,y+1]])) b color 
 
 pieceMove (Piece Q color) b (x,y) =     failSafe $right b color (x,y) ++
                                         left b color (x,y) ++
@@ -107,8 +107,15 @@ failSafe (x:xs) | fst x < 1 || fst x > 8 || snd x > 8 || snd x < 1  = failSafe x
 validK _ _ [] = []
 validK b color (x:xs)   | getColor (snd(findSquare x b)) == color = validK b color xs
                         | otherwise = x : validK b color xs
-validK' [] _ _ _ = []
-validK' (x:xs) b c current = if check (move current x b b) c == True then validK' xs b c current else x : validK' xs b c current
+validK' [] _ _ = []
+validK' (x:xs) b White = if x `elem` listW then validK' xs b White else x : validK' xs b White
+    where 
+        listW = allMoves (allPieces b b Black) b
+validK' (x:xs) b Black = if x `elem` listB then validK' xs b Black else x : validK' xs b Black
+    where 
+        listB = allMoves (allPieces b b White) b
+
+
 
 right b color (x,y) = if getColor' (x+1,y) b  == color then [] else if getColor' (x+1,y) b == None then (x+1,y) : right b color (x+1 ,y)    else [(x+1,y)]
 left b color (x,y) = if getColor' (x-1,y) b == color then [] else if getColor' (x-1,y) b == None then  (x-1,y) : left b color (x-1 ,y)        else [(x-1,y)]
@@ -117,7 +124,7 @@ down b color (x,y) = if getColor' (x,y-1) b == color then [] else if getColor' (
 downLeft b color (x,y) = if getColor'(x-1 , y-1) b == color then [] else if getColor' (x-1,y-1) b == None then (x-1 , y-1) : downLeft b color (x-1 , y-1) else [(x-1,y-1)]
 downRight b color (x,y) = if getColor' (x-1,y+1) b == color then [] else if getColor' (x-1,y+1) b == None then (x-1,y+1) : downRight b color (x-1 ,y+1) else [(x-1,y+1)]
 upLeft b color (x,y) = if getColor' (x+1,y-1) b == color then [] else if getColor' (x+1,y-1) b == None then (x+1,y-1) : upLeft b color (x+1 ,y-1) else [(x+1,y-1)]
-upRight b color (x,y) = if getColor' (x+1,y+1) b  == color then [] else if getColor' (x+1,y+1) b == None then (x+1,y+1) : right b color (x+1 ,y+1) else [(x+1,y+1)]
+upRight b color (x,y) = if getColor' (x+1,y+1) b  == color then [] else if getColor' (x+1,y+1) b == None then (x+1,y+1) : upRight b color (x+1 ,y+1) else [(x+1,y+1)]
 knightMoves b color (x,y) = knightMoves' b color (x,y) knightList 
     where 
         knightMoves' _ _ _ [] = []
@@ -298,49 +305,38 @@ det skiljas på ens egna moves och motståndarens, men det bör lätt att se nä
 det behövs även en funktion för att göra en lista med alla pjäser som fortfarande är i spel för
 detta att fungera  -}
 
-victory :: Board -> Color -> Bool
-victory board White = if (check board Black) == True && (listToMoves board (listPieces board White)) == [] then True else False
-victory board Black = if (check board White) == True && (listToMoves board (listPieces board Black)) == [] then True else False
 
-draw :: Board -> Color -> Bool
-draw board White = if (check board White) == False && (listToMoves board (listPieces board Black)) == [] then True else False
-draw board Black = if (check board Black) == False && (listToMoves board (listPieces board White)) == [] then True else False
+-- victory board Black == True om svarta kung står i schack
+victory b Black = isCheck (allKing b Black) (allMoves (allPieces b b White) b)
+victory b White = isCheck (allKing b White) (allMoves (allPieces b b Black) b)
 
+-- takes all the moves of king
+isCheck :: [Grid] -> [Grid]  -> Bool
+isCheck [] _ = False
+isCheck (k:ks) moveList = if k `elem` moveList then True else isCheck ks moveList
 
+allKing :: Board -> Color -> [Grid] 
+allKing b c = pieceMove (getPiece kingGrid b) b kingGrid ++ [kingGrid]
+    where 
+        kingGrid = findKing b b c
 
-
-
-check :: Board -> Color -> Bool
-check board f = eqMoves (kingFinder board f) (listToMoves board (listPieces board f))
-
-
---andra board är listan med pjäser
-listToMoves :: Board -> Board -> [Grid]
-listToMoves board [] = []
-listToMoves board (x:xs) = pieceMove (snd x) board (fst x) ++ listToMoves board xs
-
-eqMoves :: Grid -> [Grid] -> Bool
-eqMoves king [] = False
-eqMoves king (x:xs) = if king == x then True else eqMoves king xs
+findKing :: Board -> Board -> Color -> Grid
+findKing (b:bs) refB White = if getPiece (fst b) refB == (Piece K White) then fst b else findKing bs refB White
+findKing (b:bs) refB Black = if getPiece (fst b) refB == (Piece K Black) then fst b else findKing bs refB Black
 
 
-kingFinder :: Board -> Color -> Grid
-kingFinder ((t,Piece K White):xs) White = t
-kingFinder ((t,Piece K Black):xs) Black = t
-kingFinder (_:xs) f = kingFinder xs f
-        
+allPieces :: Board -> Board -> Color -> [Grid]
+allPieces [] _ _ = [] 
+allPieces (b:bs) refB c = if getColor' (fst b) refB == c then (fst b) : allPieces bs refB c else allPieces bs refB c
 
-listPieces :: Board -> Color -> Board --ska användas för att få vilka pieces som validmoves ska använda
-listPieces [] _ = []                 --skulle kunna göras till color specific
-listPieces ((g,Piece t White):xs) White = listPieces xs White
-listPieces ((g,Piece t Black):xs) Black = listPieces xs Black
-listPieces ((g,Piece t c):xs) f = (g,Piece t c) : listPieces xs f
-listPieces (_:xs) f = listPieces xs f
+allMoves :: [Grid] -> Board -> [Grid]
+allMoves [] _ = []
+allMoves (g:gs) b = pieceMove (getPiece g b) b g ++ allMoves gs b 
 
 -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-
+testB = move (3,7) (3,5) (move (5,1) (1,5) newGame newGame) (move (5,1) (1,5) newGame newGame)
 
 
 
