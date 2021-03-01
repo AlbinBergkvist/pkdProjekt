@@ -55,14 +55,11 @@ printIcon (Piece N Black) = "n" --"♘"
 printIcon (Piece P Black) = "p" --"♙"
 
 
+
 pieceMove :: Square -> Board -> Grid -> [Grid]
 pieceMove Empty _ _= error "not a piece"
-pieceMove (Piece K color) b (x,y) = validK b color $[(x,y) | x <- [x-1,x,x+1] , y <- [y-1,y,y+1] ]
-                                where 
-                                    validK :: Board -> Color -> [Grid] -> [Grid]
-                                    validK _ _ [] = []
-                                    validK b color (x:xs)   | getColor (snd(findSquare x b)) == color = validK b color xs
-                                                            | otherwise = x : validK b color xs
+pieceMove (Piece K color) b (x,y) = kingcheck b (x,y) color (validK b color $[(x,y) | x <- [x-1,x,x+1] , y <- [y-1,y,y+1] ]) 
+
 pieceMove (Piece Q color) b (x,y) =     right b color (x,y) ++
                                         left b color (x,y) ++
                                         up b color (x,y) ++
@@ -87,6 +84,12 @@ pieceMove (Piece P color) b (x,y) = pawnMoveDiagonal b color (x,y) ++
                                     pawnMoveStraight b color (x,y)
 
 --------------------------------------------------------------{-All the moves-}------------------------------------------------------------------------------------------
+validK _ _ [] = []
+validK b color (x:xs)   | getColor (snd(findSquare x b)) == color = validK b color xs
+                        | otherwise = x : validK b color xs
+kingcheck _ _ _ [] = []
+kingcheck b current color (x:xs)    | check (move current x b b) color == True = [] ++ kingcheck b current color xs
+                                    | otherwise = [x] ++ kingcheck b current color xs
 right b color (x,y) = if getColor' (x+1,y) b  == color then [] else if getColor' (x+1,y) b == None then (x+1,y) : right b color (x+1 ,y)    else [(x+1,y)]
 left b color (x,y) = if getColor' (x-1,y) b == color then [] else if getColor' (x-1,y) b == None then  (x-1,y) : left b color (x-1 ,y)        else [(x-1,y)]
 up b color (x,y) = if getColor' (x,y+1) b == color then [] else if getColor' (x,y+1) b == None then (x, y+1) : up b color (x, y+1)          else [(x,y+1)]
@@ -153,9 +156,6 @@ availableSquare (Piece _ _) = True
 validMove :: Square -> Board -> [Grid]
 validMove = undefined
 
-
-victory :: Board -> Bool
-victory = undefined
 
 
 inputToGrid :: String -> Grid
