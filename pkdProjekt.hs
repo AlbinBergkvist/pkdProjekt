@@ -2,6 +2,7 @@
 
 import Data.List
 import Data.Char
+import Debug.Trace
 
 type Board = [(Grid,Square)]
 
@@ -111,7 +112,7 @@ move currentP newP refBoard (b:bs) | (fst b) == currentP = (currentP,Empty) : mo
 
 pieceMove :: Square -> Board -> Grid -> [Grid]
 pieceMove Empty _ _= error "not a piece"
-pieceMove (Piece K color) b (x,y) = validK' (failSafe (validK b color $[(x,y) | x <- [x-1,x,x+1] , y <- [y-1,y,y+1]])) b color 
+pieceMove (Piece K color) b (x,y) = kingMoves b color (x,y)
 
 pieceMove (Piece Q color) b (x,y) =     failSafe $right b color (x,y) ++
                                         left b color (x,y) ++
@@ -140,9 +141,12 @@ failSafe [] = []
 failSafe (x:xs) | fst x < 1 || fst x > 8 || snd x > 8 || snd x < 1  = failSafe xs
                 | otherwise = x : failSafe xs
 --------------------------------------------------------------{-All the moves-}------------------------------------------------------------------------------------------
-validK _ _ [] = []
-validK b color (x:xs)   | getColor (snd(findSquare x b)) == color = validK b color xs
-                        | otherwise = x : validK b color xs
+kingMoves :: Board -> Color -> Grid -> [Grid]
+kingMoves b color (x,y) = validKing (failSafe [(x,y+1) , (x,y-1) , (x-1,y) , (x-1,y+1) , (x-1,y-1) , (x+1,y+1) , (x+1,y) , (x+1,y-1)]) b color
+validKing :: [Grid] -> Board -> Color -> [Grid]
+validKing [] _ _ = []
+validKing (x:xs) b color = if getColor' x b == color then validKing xs b color else x : validKing xs b color
+
 validK' [] _ _ = []
 validK' (x:xs) b White = if x `elem` listW then validK' xs b White else x : validK' xs b White
     where 
@@ -216,7 +220,7 @@ getColor' (x,y) b = getColor (snd (findSquare (x,y) b))
               getPiece (6,3) newGame == Empty
 -}
 getPiece :: Grid -> Board -> Square
-getPiece grid board = snd $ findSquare' grid board
+getPiece grid board = snd $ findSquare grid board
 
 
 {-  move piece newPosition board board
@@ -319,7 +323,7 @@ isBlack _ = False
             3 - - - - - - - -
             2 P P - P P P P P
             1 R N B K Q B N R
-            A B C D E F G H
+              A B C D E F G H
 
             Black's turn. Please select a piece to move:
 -}
@@ -481,14 +485,14 @@ victory b White = isCheck (allKing b White) (allMoves (allPieces b b Black) b)
 -- takes all the moves of king
 isCheck :: [Grid] -> [Grid]  -> Bool
 isCheck [] _ = False
-isCheck (k:ks) moveList = if k `elem` moveList then True else isCheck ks moveList
+isCheck [k] moveList = if k `elem` moveList then True else False
+isCheck (k:ks) moveList = if k `elem` moveList then isCheck ks moveList else False
 
 allKing :: Board -> Color -> [Grid] 
-allKing b c = pieceMove (getPiece kingGrid b) b kingGrid ++ [kingGrid]
-    where 
-        kingGrid = findKing b b c
+allKing b c = pieceMove (getPiece (findKing b b c) b) b (findKing b b c) ++ [(findKing b b c)]
 
 findKing :: Board -> Board -> Color -> Grid
+findKing [] _ _ = error "kung"
 findKing (b:bs) refB White = if getPiece (fst b) refB == (Piece K White) then fst b else findKing bs refB White
 findKing (b:bs) refB Black = if getPiece (fst b) refB == (Piece K Black) then fst b else findKing bs refB Black
 
@@ -504,7 +508,7 @@ allMoves (g:gs) b = pieceMove (getPiece g b) b g ++ allMoves gs b
 -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-testB = move (3,7) (3,5) (move (5,1) (1,5) newGame newGame) (move (5,1) (1,5) newGame newGame)
+testB = move (4,7) (4,5) (move (4,2) (4,4) newGame newGame) (move (4,2) (4,4) newGame newGame)
 
 
 
