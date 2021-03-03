@@ -332,7 +332,7 @@ play color boardState = do
     np <- chooseMove piece boardState
     let newPosition = np
         updatedBoard = move piece newPosition boardState boardState
-    if victory boardState color == True
+    if victory updatedBoard color == True
         then do
             putStrLn ""
             putStrLn $ printColor color ++ " has won the game. Congratulations!"
