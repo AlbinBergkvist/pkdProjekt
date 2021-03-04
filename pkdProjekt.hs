@@ -3,6 +3,7 @@
 import Data.List
 import Data.Char
 import Debug.Trace
+import Test.HUnit
 
 type Board = [(Grid,Square)]
 
@@ -131,6 +132,7 @@ failSafe [] = []
 failSafe (x:xs) | fst x < 1 || fst x > 8 || snd x > 8 || snd x < 1  = failSafe xs
                 | otherwise = x : failSafe xs
 --------------------------------------------------------------{-All the moves-}------------------------------------------------------------------------------------------
+
 {- All the moves of every piece
      The Idea is that a piece traverses the chessboard until it 
      reaches either an edge or another piece.
@@ -179,7 +181,14 @@ pawnMoveDiagonal b Black (x,y) = if getColor' (x+1,y-1) b == White then [(x+1,y-
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+{-  findSquare' location board
+    Shows the status of the given location and whether it is empty or contains a piece
+    RETURNS: Tuple with location and type of piece
+    EXAMPLES: findSquare' (1,8) newGame == ((1,8),Piece R Black)
+              findSquare' (3,4) newGame == ((3,4),Empty)
+-}
 findSquare :: Grid -> Board -> (Grid, Square)
+--VARIANT: length board
 findSquare g [b] = b
 findSquare g (b:bs) | g == fst b = b
                     | otherwise = findSquare g bs
@@ -194,6 +203,7 @@ findSquare g (b:bs) | g == fst b = b
 findSquare' :: Grid -> Board -> (Grid,Square)
 findSquare' g b = b !!  (((8-(snd g))*8 + (fst g)) -1)
 
+
 {- getColor piece 
      Gives the color of a piece
      RETURNS: Black if piece is black, and White if piece is white.
@@ -204,6 +214,7 @@ getColor :: Square -> Color
 getColor Empty = None
 getColor (Piece _ c) = c
 
+
 {- getColor' placement chessboard
      Gives the color of the piece standing on the placement
      RETURNS:   Black if the piece standing on placement on chessboard is black
@@ -213,7 +224,6 @@ getColor (Piece _ c) = c
   -}
 getColor' :: Grid -> Board -> Color
 getColor' (x,y) b = getColor (snd (findSquare (x,y) b))
-
 
 
 {-  getPiece location board
@@ -476,11 +486,6 @@ validInput (x:y:z) | (elem x ['A'..'H'] || elem x ['a'..'h']) && elem y ['1'..'8
                    | otherwise = False
 
 
-
-
-
-
-
 {- victory chessboard color
      Checks if color has won
      PRE: Function must be used just before white moves.
@@ -523,6 +528,7 @@ findKing [] _ _ = error "kung"
 findKing (b:bs) refB White = if getPiece (fst b) refB == (Piece K White) then fst b else findKing bs refB White
 findKing (b:bs) refB Black = if getPiece (fst b) refB == (Piece K Black) then fst b else findKing bs refB Black
 
+
 {- allPieces chessBoard referenceChessBoard color
      gives the placement for all the pieces of a specific color. chessBoard and referenceChessBoard is the same
      when the function is called the first time.
@@ -545,13 +551,6 @@ allPieces (b:bs) refB c = if getColor' (fst b) refB == c then (fst b) : allPiece
 allMoves :: [Grid] -> Board -> [Grid]
 allMoves [] _ = []
 allMoves (g:gs) b = pieceMove (getPiece g b) b g ++ allMoves gs b 
-
--- xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-
-testB = move (3,7) (4,6) (move (5,1) (1,5) newGame newGame) (move (5,1) (1,5) newGame newGame)
-
-
 
 
 {-  main
@@ -596,6 +595,7 @@ main = do
     play White newGame
 
     
+-------------------- TEST CASES -----------------------
 
 test1 = TestCase $ assertEqual "victory at start" 
                     False (victory newGame Black)
