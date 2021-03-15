@@ -5,15 +5,281 @@ import Data.Char
 import Debug.Trace
 import Test.HUnit
 
+
+---------------------------DATA TYPES-------------------------
+
+{- Board represents all the locations on the chessboard.
+   INVARIANT: The list must be in order by grids starting with (1,8) and ending with (8,1).
+-}
 type Board = [(Grid,Square)]
 
+
+{- Grid represents the location on the chessboard.
+   INVARIANT: Integers must be greater or equal to 1 and less than or equal to 8.
+   EXAMPLES: (3,4)
+             (5,4)
+             (2,8)
+-}
 type Grid = (Int,Int)
 
+
+{- Representation Convention: Square represents the status of a given square on the chessboard.
+   EXAMPLES: Empty
+             Piece K White
+             Piece B Black
+-}
 data Square = Empty | Piece Type Color deriving(Eq,Show)
 
+
+{- Type represents the type of piece. 
+   INVARIANT: Type is not empty
+   EXAMPLES: King -> K
+             Queen -> Q
+             Knight -> N
+-}
 data Type = K | Q | R | B | N | P deriving(Eq,Show)
 
+
+{- Color represents the available colors of a chess piece. If there is no color the color will be None.
+-}
 data Color = Black | White | None deriving(Eq,Show)
+
+
+-----------------------FUNCTIONS-----------------------------
+
+{-  main
+    main game function that welcomes player and starts the game process
+    SIDE EFFECTS: welcomes players and begins play of game
+    EXAMPLES:
+        Example session:
+            > main
+
+            Hello! Let's play chess
+
+            Players will take turns moving pieces
+            To move a piece, select which piece accoridng to their location on the grid
+            by specifying the letter and number in the form x# or X#. Then select where
+            to place the piece on the board in the same way by choosing a grid location.
+
+            Good luck!
+
+            8 r n b k q b n r
+            7 p p p p p p p p
+            6 - - - - - - - -
+            5 - - - - - - - -
+            4 - - - - - - - -
+            3 - - - - - - - -
+            2 P P P P P P P P
+            1 R N B K Q B N R
+            A B C D E F G H
+
+            White's turn. Please select a piece to move:
+-}
+main :: IO ()
+main = do
+    putStrLn ""
+    putStrLn "Hello! Let's play chess"
+    putStrLn ""
+    putStrLn "Players will take turns moving pieces"
+    putStrLn "To move a piece, select which piece accoridng to their location on the grid"
+    putStrLn "by specifying the letter and number in the form x# or X#. Then select where"
+    putStrLn "to place the piece on the board in the same way by choosing a grid location."
+    putStrLn ""
+    putStrLn "Good luck!"
+    play White newGame
+
+
+{-  play color boardState
+    function that runs through the set of rules for the chess game along with moving pieces according to the specific rules for the color and the boardstate
+    SIDE EFFECTS: keeps playing the game until a player has won
+    EXAMPLES: 
+        Example session:
+            > play White newGame
+            8 r n b k q b n r
+            7 p p p p p p p p
+            6 - - - - - - - -
+            5 - - - - - - - -
+            4 - - - - - - - -
+            3 - - - - - - - -
+            2 P P P P P P P P
+            1 R N B K Q B N R
+            A B C D E F G H
+
+            White's turn. Please select a piece to move:
+            > c2
+            Select where to place the piece:
+            > c4
+            8 r n b k q b n r
+            7 p p p p p p p p
+            6 - - - - - - - -
+            5 - - - - - - - -
+            4 - - P - - - - -
+            3 - - - - - - - -
+            2 P P - P P P P P
+            1 R N B K Q B N R
+              A B C D E F G H
+
+            Black's turn. Please select a piece to move:
+-}
+play :: Color -> Board -> IO ()
+play color boardState = do
+    putStrLn ""
+    printBoard boardState
+    if victory boardState color == True
+        then do
+            putStrLn ""
+            putStrLn $ printColor color ++ " has won the game. Congratulations!"
+            putStrLn ""
+            putStrLn "Do you want to play again? (Yes/No)"
+            answer <- getLine
+            if answer == "yes" || answer == "Yes"
+                then do
+                    play White newGame
+                else do
+                    putStrLn ""
+                    putStrLn "Thank you for playing!"
+        else do 
+            p <- choosePiece color boardState
+            let piece = p
+            np <- chooseMove piece boardState
+            let newPosition = np
+                updatedBoard = move piece newPosition boardState boardState
+            if color == White
+                then
+                    play Black updatedBoard
+                else
+                    play White updatedBoard
+    where
+        printColor White = "White"
+        printColor Black = "Black"
+
+
+{-  choosePiece color boardstate
+    allows user to select which piece to move by typing the location of the piece in the boardstate and following a given set of rules according to color and boardstate
+    RETURNS: grid location
+    SIDE EFFECTS: asks player to input desired move
+    EXAMPLES: 
+        Example session:
+            > choosePiece White newGame
+            White's turn. PLease select a piece to move:
+            > c3
+            You have chosen an empty square. Please select a new piece.
+            White's turn. Please select a piece to move:
+            > d2
+            (4,2)
+-} 
+choosePiece :: Color -> Board -> IO Grid
+choosePiece color boardState = do
+    if color == White
+        then do
+            putStrLn ""
+            putStrLn "White's turn. Please select a piece to move:"
+        else do
+            putStrLn ""
+            putStrLn "Black's turn. Please select a piece to move:"
+    p <- getLine
+    if validInput p == False
+        then do putStrLn ""
+                putStrLn "Invalid input. Must be letter A-H and number 1-8 in form letter+number ex. b3 or E5"
+                choosePiece color boardState
+        else do
+            let piece = inputToGrid p
+            if getPiece piece boardState == Empty
+                then do
+                    putStrLn ""
+                    putStrLn "You have chosen an empty square. Please select a new piece."
+                    choosePiece color boardState
+                else do
+                    if (pieceMove (getPiece piece boardState) boardState piece) == []
+                        then do
+                            putStrLn ""
+                            putStrLn "No available moves for chosen piece. Please select a new piece."
+                            choosePiece color boardState
+                        else do
+                            if color == White
+                                then do
+                                    if (isWhite $ snd $ findSquare' piece boardState) == False
+                                        then do
+                                            let grid = (toUpper $ head p) : tail p
+                                            putStrLn ""
+                                            putStrLn $ "No white piece at " ++ grid ++ ". Please select a new piece to move."
+                                            choosePiece White boardState
+                                        else do
+                                            return piece
+                                else do
+                                    if (isBlack $ snd $ findSquare' piece boardState) == False
+                                        then do
+                                            let grid = (toUpper $ head p) : tail p
+                                            putStrLn ""
+                                            putStrLn $ "No black piece at " ++ grid ++ ". Please select a new piece to move."
+                                            choosePiece Black boardState
+                                        else do
+                                            return piece
+
+
+{-  chooseMove piece boardState
+    allows player to choose where to place the piece given a set of rules that apply to the color and boardstate
+    RETURNS: grid location
+    SIDE EFFECTS: Asks player to input desired loaction for the chosen piece
+    EXAMPLES: 
+        Example session:
+            > chooseMove (2,2) newGame
+            Select where to place the piece:
+            > b3
+            (2,3)
+-}
+chooseMove :: Grid -> Board -> IO Grid
+chooseMove piece boardState = do
+    putStrLn ""
+    putStrLn "Select where to place the piece:"
+    n <- getLine
+    if validInput n == False 
+        then do putStrLn ""
+                putStrLn "Invalid input. Must be letter A-H and number 1-8 in form letter+number ex. b3 or E5"
+                chooseMove piece boardState
+        else do
+            let newPosition = inputToGrid n
+            if elem newPosition (pieceMove (getPiece piece boardState) boardState piece) == False
+                then do
+                    putStrLn ""
+                    putStrLn "Not a valid move for chosen piece. Please select a new move"
+                    chooseMove piece boardState
+                else do
+                    return newPosition
+
+
+{-  inputToGrid input
+    converts a text input to a grid location
+    PRE: first letter is a letter A-F
+    RETURNS: Grid location representing the text input
+    EXAMPLES: inputToGrid "a2" == (1,2)
+              inputToGrid "C4" == (3,4)
+              inputToGrid "H8" == (8,8)
+-}
+inputToGrid :: String -> Grid
+inputToGrid (x:y:_)
+    | x == 'a' || x == 'A' = (1,digitToInt y)
+    | x == 'b' || x == 'B' = (2,digitToInt y)
+    | x == 'c' || x == 'C' = (3,digitToInt y)
+    | x == 'd' || x == 'D' = (4,digitToInt y)
+    | x == 'e' || x == 'E' = (5,digitToInt y)
+    | x == 'f' || x == 'F' = (6,digitToInt y)
+    | x == 'g' || x == 'G' = (7,digitToInt y)
+    | x == 'h' || x == 'H' = (8,digitToInt y)
+
+
+{-  move piece newPosition board board
+    given a piece's grid location, the function will move the piece to the new location and update the board
+    PRE: the grid locations are on the board
+    RETURNS: updated board with the new location after move
+    EXAMPLES: move (2,2) (2,3) newGame newGame = [((1,8),Piece R Black),((2,8),Piece N Black),((3,8),Piece B Black),((4,8),Piece K Black),((5,8),Piece Q Black),((6,8),Piece B Black),((7,8),Piece N Black),((8,8),Piece R Black),((1,7),Piece P Black),((2,7),Piece P Black),((3,7),Piece P Black),((4,7),Piece P Black),((5,7),Piece P Black),((6,7),Piece P Black),((7,7),Piece P Black),((8,7),Piece P Black),((1,6),Empty),((2,6),Empty),((3,6),Empty),((4,6),Empty),((5,6),Empty),((6,6),Empty),((7,6),Empty),((8,6),Empty),((1,5),Empty),((2,5),Empty),((3,5),Empty),((4,5),Empty),((5,5),Empty),((6,5),Empty),((7,5),Empty),((8,5),Empty),((1,4),Empty),((2,4),Empty),((3,4),Empty),((4,4),Empty),((5,4),Empty),((6,4),Empty),((7,4),Empty),((8,4),Empty),((1,3),Empty),((2,3),Piece P White),((3,3),Empty),((4,3),Empty),((5,3),Empty),((6,3),Empty),((7,3),Empty),((8,3),Empty),((1,2),Piece P White),((2,2),Empty),((3,2),Piece P White),((4,2),Piece P White),((5,2),Piece P White),((6,2),Piece P White),((7,2),Piece P White),((8,2),Piece P White),((1,1),Piece R White),((2,1),Piece N White),((3,1),Piece B White),((4,1),Piece K White),((5,1),Piece Q White),((6,1),Piece B White),((7,1),Piece N White),((8,1),Piece R White)]
+-}
+move :: Grid -> Grid -> Board -> Board -> Board
+-- VARIANT: length board
+move _ _ _ [] = []
+move currentP newP refBoard (b:bs) | (fst b) == currentP = (currentP,Empty) : move currentP newP refBoard bs
+                                   | (fst b) == newP     = (newP, (snd (findSquare' currentP refBoard))) : move currentP newP refBoard bs
+                                   | otherwise           = b : move currentP newP refBoard bs
 
 
 {-  newGame
@@ -29,18 +295,6 @@ newGame = [ ((1,8),(Piece R Black)) , ((2,8),(Piece N Black)) , ((3,8),(Piece B 
             ((1,3),(Empty)) , ((2,3),(Empty)) , ((3,3),(Empty)) , ((4,3),(Empty)) , ((5,3),(Empty)) , ((6,3),(Empty)) , ((7,3),(Empty)) , ((8,3),(Empty)) ,
             ((1,2),(Piece P White)) , ((2,2),(Piece P White)) , ((3,2),(Piece P White)) , ((4,2),(Piece P White)) , ((5,2),(Piece P White)) , ((6,2),(Piece P White)) , ((7,2),(Piece P White)) , ((8,2),(Piece P White)),
             ((1,1),(Piece R White)) , ((2,1),(Piece N White)) , ((3,1),(Piece B White)) , ((4,1),(Piece K White)) , ((5,1),(Piece Q White)) , ((6,1),(Piece B White)) , ((7,1),(Piece N White)) , ((8,1),(Piece R White)) ]
-
-
-{-  fromBoardtoBoardList board
-    converts a board list to a list of boardlists in sets of 8 per list element
-    RETURNS: List of boards with 8 elements in each element of the list
-    EXAMPLES: fromBoardtoBoardList [((1,6),(Empty)) , ((2,6),(Empty)) , ((3,6),(Empty)) , ((4,6),(Empty)) , ((5,6),(Empty)) , ((6,6),(Empty)) , ((7,6),(Empty)) , ((8,6),(Empty)) , ((1,5),(Empty)) , ((2,5),(Empty)) , ((3,5),(Empty)) , ((4,5),(Empty)) , ((5,5),(Empty)) , ((6,5),(Empty)) , ((7,5),(Empty)) , ((8,5),(Empty))] == [[((1,6),Empty),((2,6),Empty),((3,6),Empty),((4,6),Empty),((5,6),Empty),((6,6),Empty),((7,6),Empty),((8,6),Empty)],[((1,5),Empty),((2,5),Empty),((3,5),Empty),((4,5),Empty),((5,5),Empty),((6,5),Empty),((7,5),Empty),((8,5),Empty)]]
-              fromBoardtoBoardList [] = []
--}
-fromBoardtoBoardList :: Board -> [Board]
--- VARIANT: length board
-fromBoardtoBoardList [] = []
-fromBoardtoBoardList board = (take 8 board) : fromBoardtoBoardList (drop 8 board)
 
 
 {-  printBoard board
@@ -68,6 +322,18 @@ printBoard board = mapM_ putStrLn $ gridNum $ map (intercalate " ") $ icons $ se
         gridNum (x:xs) = ((show (length (x:xs) -1) ) ++ " " ++ x) : (gridNum xs)
 
 
+{-  fromBoardtoBoardList board
+    converts a board list to a list of boardlists in sets of 8 per list element
+    RETURNS: List of boards with 8 elements in each element of the list
+    EXAMPLES: fromBoardtoBoardList [((1,6),(Empty)) , ((2,6),(Empty)) , ((3,6),(Empty)) , ((4,6),(Empty)) , ((5,6),(Empty)) , ((6,6),(Empty)) , ((7,6),(Empty)) , ((8,6),(Empty)) , ((1,5),(Empty)) , ((2,5),(Empty)) , ((3,5),(Empty)) , ((4,5),(Empty)) , ((5,5),(Empty)) , ((6,5),(Empty)) , ((7,5),(Empty)) , ((8,5),(Empty))] == [[((1,6),Empty),((2,6),Empty),((3,6),Empty),((4,6),Empty),((5,6),Empty),((6,6),Empty),((7,6),Empty),((8,6),Empty)],[((1,5),Empty),((2,5),Empty),((3,5),Empty),((4,5),Empty),((5,5),Empty),((6,5),Empty),((7,5),Empty),((8,5),Empty)]]
+              fromBoardtoBoardList [] = []
+-}
+fromBoardtoBoardList :: Board -> [Board]
+-- VARIANT: length board
+fromBoardtoBoardList [] = []
+fromBoardtoBoardList board = (take 8 board) : fromBoardtoBoardList (drop 8 board)
+
+
 {-  printIcon piece
     prints the corresponding icon of a given piece
     RETURNS: icon of given piece
@@ -91,6 +357,74 @@ printIcon (Piece R Black) = "r" --"♖"
 printIcon (Piece B Black) = "b" --"♗"
 printIcon (Piece N Black) = "n" --"♘"
 printIcon (Piece P Black) = "p" --"♙"
+
+
+{- victory chessboard color
+     Checks if color has won
+     PRE: Function must be used just before white moves.
+     RETURNS: True if the color given has won, on the given chessboard
+     EXAMPLES: 
+                victory newGame Black == False
+                victory [ ((1,8),(Piece R Black)) , ((2,8),(Piece K White)) , ((3,8),(Piece Q Black))] Black == True
+  -}
+victory b Black = isCheck (allKing b White) (allMoves (allPieces b b Black) b)
+victory b White = isCheck (allKing b Black) (allMoves (allPieces b b White) b)
+
+
+{- isCheck allKingMoves allMovesAgainstKing
+     Checks if the king is standing in check and if any square he moves to also checks him.
+     RETURNS: True if allKingMoves occur in allMovesAgainstKing
+     EXAMPLES: isCheck (allKing newGame White) (allMoves (allPieces newGame newGame Black) b) == False
+  -}
+isCheck :: [Grid] -> [Grid]  -> Bool
+isCheck [] _ = False
+isCheck [k] moveList = if k `elem` moveList then True else False
+isCheck (k:ks) moveList = if k `elem` moveList then isCheck ks moveList else False
+
+
+{- allKing chessboard color
+     Gives a list of all available moves and is standing for a king with a specific color
+     RETURNS: a list of available moves and where the king stands for the king with Color color on chessboard.
+     EXAMPLES: allKing newGame White == [(4,1)]
+  -}
+allKing :: Board -> Color -> [Grid] 
+allKing b c = pieceMove (getPiece (findKing b b c) b) b (findKing b b c) ++ [(findKing b b c)]
+
+
+{- findKing chessboard referenceChessboard color
+     Finds where the king of a specific color stands. chessboard and referenceChessboard is the same chessboard
+     when calling the function the first time.
+     RETURNS: a placement where the King of Color color stands on the given chessboard.
+     EXAMPLES: findKing newGame newGame White == (4,1)
+  -}
+findKing :: Board -> Board -> Color -> Grid
+findKing [] _ _ = error "kung"
+findKing (b:bs) refB White = if getPiece (fst b) refB == (Piece K White) then fst b else findKing bs refB White
+findKing (b:bs) refB Black = if getPiece (fst b) refB == (Piece K Black) then fst b else findKing bs refB Black
+
+
+{- allPieces chessBoard referenceChessBoard color
+     gives the placement for all the pieces of a specific color. chessBoard and referenceChessBoard is the same
+     when the function is called the first time.
+     RETURNS: A list of the placement for every Black or White piece, depending on color, on chessBoard.
+     SIDE EFFECTS: ... side effects, if any, including exceptions ...
+     EXAMPLES: ... especially if useful to highlight delicate issues; also consider including counter-examples ...
+  -}
+allPieces :: Board -> Board -> Color -> [Grid]
+allPieces [] _ _ = [] 
+allPieces (b:bs) refB c = if getColor' (fst b) refB == c then (fst b) : allPieces bs refB c else allPieces bs refB c
+
+
+{- allMoves allPieces chessboard
+     lists all the moves a color can make. The color is dependant on allPieces color. 
+     PRE:  allPieces must come from the function allPieces, with the color of choise.
+     RETURNS: A list of all the moves allPieces can make on chessboard.
+     EXAMPLES: allMoves (allPieces newGame newGame White) newGame == 
+         (1,3),(1,4),(2,3),(2,4),(3,3),(3,4),(4,3),(4,4),(5,3),(5,4),(6,3),(6,4),(7,3),(7,4),(8,3),(8,4),(1,3),(3,3),(6,3),(8,3)]
+  -}
+allMoves :: [Grid] -> Board -> [Grid]
+allMoves [] _ = []
+allMoves (g:gs) b = pieceMove (getPiece g b) b g ++ allMoves gs b 
 
 
 {- PieceMove piece board placement
@@ -238,52 +572,6 @@ getPiece :: Grid -> Board -> Square
 getPiece grid board = snd $ findSquare grid board
 
 
-{-  move piece newPosition board board
-    given a piece's grid location, the function will move the piece to the new location and update the board
-    PRE: the grid locations are on the board
-    RETURNS: updated board with the new location after move
-    EXAMPLES: move (2,2) (2,3) newGame newGame = [((1,8),Piece R Black),((2,8),Piece N Black),((3,8),Piece B Black),((4,8),Piece K Black),((5,8),Piece Q Black),((6,8),Piece B Black),((7,8),Piece N Black),((8,8),Piece R Black),((1,7),Piece P Black),((2,7),Piece P Black),((3,7),Piece P Black),((4,7),Piece P Black),((5,7),Piece P Black),((6,7),Piece P Black),((7,7),Piece P Black),((8,7),Piece P Black),((1,6),Empty),((2,6),Empty),((3,6),Empty),((4,6),Empty),((5,6),Empty),((6,6),Empty),((7,6),Empty),((8,6),Empty),((1,5),Empty),((2,5),Empty),((3,5),Empty),((4,5),Empty),((5,5),Empty),((6,5),Empty),((7,5),Empty),((8,5),Empty),((1,4),Empty),((2,4),Empty),((3,4),Empty),((4,4),Empty),((5,4),Empty),((6,4),Empty),((7,4),Empty),((8,4),Empty),((1,3),Empty),((2,3),Piece P White),((3,3),Empty),((4,3),Empty),((5,3),Empty),((6,3),Empty),((7,3),Empty),((8,3),Empty),((1,2),Piece P White),((2,2),Empty),((3,2),Piece P White),((4,2),Piece P White),((5,2),Piece P White),((6,2),Piece P White),((7,2),Piece P White),((8,2),Piece P White),((1,1),Piece R White),((2,1),Piece N White),((3,1),Piece B White),((4,1),Piece K White),((5,1),Piece Q White),((6,1),Piece B White),((7,1),Piece N White),((8,1),Piece R White)]
--}
-move :: Grid -> Grid -> Board -> Board -> Board
--- VARIANT: length board
-move _ _ _ [] = []
-move currentP newP refBoard (b:bs) | (fst b) == currentP = (currentP,Empty) : move currentP newP refBoard bs
-                                   | (fst b) == newP     = (newP, (snd (findSquare' currentP refBoard))) : move currentP newP refBoard bs
-                                   | otherwise           = b : move currentP newP refBoard bs
-
-
-{-  availableSquare square
-    checks if the given square is empty or if it contains a piece
-    RETURNS: True iff there is a piece on the given square
-             False iff the given square is empty
-    EXAMPLES: availableSquare Empty == False
-              availableSquare (Piece K Black) == True
--}
-availableSquare :: Square -> Bool
-availableSquare Empty = False
-availableSquare (Piece _ _) = True
-
-
-{-  inputToGrid input
-    converts a text input to a grid location
-    PRE: first letter is a letter A-F
-    RETURNS: Grid location representing the text input
-    EXAMPLES: inputToGrid "a2" == (1,2)
-              inputToGrid "C4" == (3,4)
-              inputToGrid "H8" == (8,8)
--}
-inputToGrid :: String -> Grid
-inputToGrid (x:y:_)
-    | x == 'a' || x == 'A' = (1,digitToInt y)
-    | x == 'b' || x == 'B' = (2,digitToInt y)
-    | x == 'c' || x == 'C' = (3,digitToInt y)
-    | x == 'd' || x == 'D' = (4,digitToInt y)
-    | x == 'e' || x == 'E' = (5,digitToInt y)
-    | x == 'f' || x == 'F' = (6,digitToInt y)
-    | x == 'g' || x == 'G' = (7,digitToInt y)
-    | x == 'h' || x == 'H' = (8,digitToInt y)
-
-
 {-  isWhite piece
     checks if given piece is a white piece
     RETURNS: True iff piece is white
@@ -310,165 +598,6 @@ isBlack (Piece _ Black) = True
 isBlack _ = False
 
 
-{-  play color boardState
-    function that runs through the set of rules for the chess game along with moving pieces according to the specific rules for the color and the boardstate
-    SIDE EFFECTS: keeps playing the game until a player has won
-    EXAMPLES: 
-        Example session:
-            > play White newGame
-            8 r n b k q b n r
-            7 p p p p p p p p
-            6 - - - - - - - -
-            5 - - - - - - - -
-            4 - - - - - - - -
-            3 - - - - - - - -
-            2 P P P P P P P P
-            1 R N B K Q B N R
-            A B C D E F G H
-
-            White's turn. Please select a piece to move:
-            > c2
-            Select where to place the piece:
-            > c4
-            8 r n b k q b n r
-            7 p p p p p p p p
-            6 - - - - - - - -
-            5 - - - - - - - -
-            4 - - P - - - - -
-            3 - - - - - - - -
-            2 P P - P P P P P
-            1 R N B K Q B N R
-              A B C D E F G H
-
-            Black's turn. Please select a piece to move:
--}
-play :: Color -> Board -> IO ()
-play color boardState = do
-    putStrLn ""
-    printBoard boardState
-    if victory boardState color == True
-        then do
-            putStrLn ""
-            putStrLn $ printColor color ++ " has won the game. Congratulations!"
-            putStrLn ""
-            putStrLn "Do you want to play again? (Yes/No)"
-            answer <- getLine
-            if answer == "yes" || answer == "Yes"
-                then do
-                    play White newGame
-                else do
-                    putStrLn ""
-                    putStrLn "Thank you for playing!"
-        else do 
-            p <- choosePiece color boardState
-            let piece = p
-            np <- chooseMove piece boardState
-            let newPosition = np
-                updatedBoard = move piece newPosition boardState boardState
-            if color == White
-                then
-                    play Black updatedBoard
-                else
-                    play White updatedBoard
-    where
-        printColor White = "White"
-        printColor Black = "Black"
-
-
-{-  chooseMove piece boardState
-    allows player to choose where to place the piece given a set of rules that apply to the color and boardstate
-    RETURNS: grid location
-    SIDE EFFECTS: Asks player to input desired loaction for the chosen piece
-    EXAMPLES: 
-        Example session:
-            > chooseMove (2,2) newGame
-            Select where to place the piece:
-            > b3
-            (2,3)
--}
-chooseMove :: Grid -> Board -> IO Grid
-chooseMove piece boardState = do
-    putStrLn ""
-    putStrLn "Select where to place the piece:"
-    n <- getLine
-    if validInput n == False 
-        then do putStrLn ""
-                putStrLn "Invalid input. Must be letter A-H and number 1-8 in form letter+number ex. b3 or E5"
-                chooseMove piece boardState
-        else do
-            let newPosition = inputToGrid n
-            if elem newPosition (pieceMove (getPiece piece boardState) boardState piece) == False
-                then do
-                    putStrLn ""
-                    putStrLn "Not a valid move for chosen piece. Please select a new move"
-                    chooseMove piece boardState
-                else do
-                    return newPosition
-    
-
-{-  choosePiece color boardstate
-    allows user to select which piece to move by typing the location of the piece in the boardstate and following a given set of rules according to color and boardstate
-    RETURNS: grid location
-    SIDE EFFECTS: asks player to input desired move
-    EXAMPLES: 
-        Example session:
-            > choosePiece White newGame
-            White's turn. PLease select a piece to move:
-            > c3
-            You have chosen an empty square. Please select a new piece.
-            White's turn. Please select a piece to move:
-            > d2
-            (4,2)
--} 
-choosePiece :: Color -> Board -> IO Grid
-choosePiece color boardState = do
-    if color == White
-        then do
-            putStrLn ""
-            putStrLn "White's turn. Please select a piece to move:"
-        else do
-            putStrLn ""
-            putStrLn "Black's turn. Please select a piece to move:"
-    p <- getLine
-    if validInput p == False
-        then do putStrLn ""
-                putStrLn "Invalid input. Must be letter A-H and number 1-8 in form letter+number ex. b3 or E5"
-                choosePiece color boardState
-        else do
-            let piece = inputToGrid p
-            if getPiece piece boardState == Empty
-                then do
-                    putStrLn ""
-                    putStrLn "You have chosen an empty square. Please select a new piece."
-                    choosePiece color boardState
-                else do
-                    if (pieceMove (getPiece piece boardState) boardState piece) == []
-                        then do
-                            putStrLn ""
-                            putStrLn "No available moves for chosen piece. Please select a new piece."
-                            choosePiece color boardState
-                        else do
-                            if color == White
-                                then do
-                                    if (isWhite $ snd $ findSquare' piece boardState) == False
-                                        then do
-                                            let grid = (toUpper $ head p) : tail p
-                                            putStrLn ""
-                                            putStrLn $ "No white piece at " ++ grid ++ ". Please select a new piece to move."
-                                            choosePiece White boardState
-                                        else do
-                                            return piece
-                                else do
-                                    if (isBlack $ snd $ findSquare' piece boardState) == False
-                                        then do
-                                            let grid = (toUpper $ head p) : tail p
-                                            putStrLn ""
-                                            putStrLn $ "No black piece at " ++ grid ++ ". Please select a new piece to move."
-                                            choosePiece Black boardState
-                                        else do
-                                            return piece
-
-
 {-  validInput input
     checks if the given input is a correctly formated input
     RETURNS: True iff input is correctly formated
@@ -485,121 +614,15 @@ validInput [_] = False
 validInput (x:y:z) | (elem x ['A'..'H'] || elem x ['a'..'h']) && elem y ['1'..'8'] && z == [] = True
                    | otherwise = False
 
-
-{- victory chessboard color
-     Checks if color has won
-     PRE: Function must be used just before white moves.
-     RETURNS: True if the color given has won, on the given chessboard
-     EXAMPLES: 
-                victory newGame Black == False
-                victory [ ((1,8),(Piece R Black)) , ((2,8),(Piece K White)) , ((3,8),(Piece Q Black))] Black == True
-  -}
-victory b Black = isCheck (allKing b White) (allMoves (allPieces b b Black) b)
-victory b White = isCheck (allKing b Black) (allMoves (allPieces b b White) b)
-
-{- isCheck allKingMoves allMovesAgainstKing
-     Checks if the king is standing in check and if any square he moves to also checks him.
-     RETURNS: True if allKingMoves occur in allMovesAgainstKing
-     EXAMPLES: isCheck (allKing newGame White) (allMoves (allPieces newGame newGame Black) b) == False
-  -}
-isCheck :: [Grid] -> [Grid]  -> Bool
-isCheck [] _ = False
-isCheck [k] moveList = if k `elem` moveList then True else False
-isCheck (k:ks) moveList = if k `elem` moveList then isCheck ks moveList else False
-
-
-{- allKing chessboard color
-     Gives a list of all available moves and is standing for a king with a specific color
-     RETURNS: a list of available moves and where the king stands for the king with Color color on chessboard.
-     EXAMPLES: allKing newGame White == [(4,1)]
-  -}
-allKing :: Board -> Color -> [Grid] 
-allKing b c = pieceMove (getPiece (findKing b b c) b) b (findKing b b c) ++ [(findKing b b c)]
-
-
-{- findKing chessboard referenceChessboard color
-     Finds where the king of a specific color stands. chessboard and referenceChessboard is the same chessboard
-     when calling the function the first time.
-     RETURNS: a placement where the King of Color color stands on the given chessboard.
-     EXAMPLES: findKing newGame newGame White == (4,1)
-  -}
-findKing :: Board -> Board -> Color -> Grid
-findKing [] _ _ = error "kung"
-findKing (b:bs) refB White = if getPiece (fst b) refB == (Piece K White) then fst b else findKing bs refB White
-findKing (b:bs) refB Black = if getPiece (fst b) refB == (Piece K Black) then fst b else findKing bs refB Black
-
-
-{- allPieces chessBoard referenceChessBoard color
-     gives the placement for all the pieces of a specific color. chessBoard and referenceChessBoard is the same
-     when the function is called the first time.
-     RETURNS: A list of the placement for every Black or White piece, depending on color, on chessBoard.
-     SIDE EFFECTS: ... side effects, if any, including exceptions ...
-     EXAMPLES: ... especially if useful to highlight delicate issues; also consider including counter-examples ...
-  -}
-allPieces :: Board -> Board -> Color -> [Grid]
-allPieces [] _ _ = [] 
-allPieces (b:bs) refB c = if getColor' (fst b) refB == c then (fst b) : allPieces bs refB c else allPieces bs refB c
-
-
-{- allMoves allPieces chessboard
-     lists all the moves a color can make. The color is dependant on allPieces color. 
-     PRE:  allPieces must come from the function allPieces, with the color of choise.
-     RETURNS: A list of all the moves allPieces can make on chessboard.
-     EXAMPLES: allMoves (allPieces newGame newGame White) newGame == 
-         (1,3),(1,4),(2,3),(2,4),(3,3),(3,4),(4,3),(4,4),(5,3),(5,4),(6,3),(6,4),(7,3),(7,4),(8,3),(8,4),(1,3),(3,3),(6,3),(8,3)]
-  -}
-allMoves :: [Grid] -> Board -> [Grid]
-allMoves [] _ = []
-allMoves (g:gs) b = pieceMove (getPiece g b) b g ++ allMoves gs b 
-
-
-{-  main
-    main game function that welcomes player and starts the game process
-    SIDE EFFECTS: welcomes players and begins play of game
-    EXAMPLES:
-        Example session:
-            > main
-
-            Hello! Let's play chess
-
-            Players will take turns moving pieces
-            To move a piece, select which piece accoridng to their location on the grid
-            by specifying the letter and number in the form x# or X#. Then select where
-            to place the piece on the board in the same way by choosing a grid location.
-
-            Good luck!
-
-            8 r n b k q b n r
-            7 p p p p p p p p
-            6 - - - - - - - -
-            5 - - - - - - - -
-            4 - - - - - - - -
-            3 - - - - - - - -
-            2 P P P P P P P P
-            1 R N B K Q B N R
-            A B C D E F G H
-
-            White's turn. Please select a piece to move:
--}
-main :: IO ()
-main = do
-    putStrLn ""
-    putStrLn "Hello! Let's play chess"
-    putStrLn ""
-    putStrLn "Players will take turns moving pieces"
-    putStrLn "To move a piece, select which piece accoridng to their location on the grid"
-    putStrLn "by specifying the letter and number in the form x# or X#. Then select where"
-    putStrLn "to place the piece on the board in the same way by choosing a grid location."
-    putStrLn ""
-    putStrLn "Good luck!"
-    play White newGame
-
     
--------------------- TEST CASES -----------------------
+---------------------- TEST CASES --------------------------
 
+-- Makes sure that no player has won at the start of the game.
 test1 = TestCase $ assertEqual "victory at start" 
                     False (victory newGame Black)
 
+
+-- Tests if check function works properly on a game situation that should be checked.
 test2 = TestCase $ assertEqual "check"
     True (victory [ ((1,8),(Piece R Black)), ((2,8),(Piece N Black)), ((3,8),(Piece B Black)), ((4,8),(Piece K Black)), ((5,8),(Piece Q Black)), ((6,8),(Piece B Black)), ((7,8),(Piece N Black)), ((8,8),(Piece R Black)),
                     ((1,7),(Piece P Black)), ((2,7),(Piece P Black)), ((3,7),(Empty)),         ((4,7),(Piece P Black)), ((5,7),(Piece P Black)), ((6,7),(Piece P Black)), ((7,7),(Piece P Black)), ((8,7),(Piece P Black)),
@@ -611,17 +634,42 @@ test2 = TestCase $ assertEqual "check"
                     ((1,1),(Piece R White)), ((2,1),(Piece N White)), ((3,1),(Piece B White)), ((4,1),(Piece K White)), ((5,1),(Empty)),         ((6,1),(Piece B White)), ((7,1),(Piece N White)), ((8,1),(Piece R White)) ]
             White )
 
+
+-- Tests if the inputs can be converteed into coordinates
 test3 = TestCase $ assertEqual "input to grid"
-                    (1,2) (inputToGrid "a2")
+                    (1,1) (inputToGrid "a1")
+test4 = TestCase $ assertEqual "input to grid"
+                    (8,8) (inputToGrid "H8")
+test5 = TestCase $ assertEqual "input to grid"
+                    (3,4) (inputToGrid "C4")
+test6 = TestCase $ assertEqual "input to grid"
+                    (6,7) (inputToGrid "f7")
  
 
-test4 = TestCase $ assertEqual "isWhite"
+-- Checks to ensure that the functions to check the color are working properly.
+test7 = TestCase $ assertEqual "isWhite black piece"
                     False (isWhite (Piece K Black))
+test8 = TestCase $ assertEqual "isWhite white piece"
+                    True (isWhite (Piece P White))
+test9 = TestCase $ assertEqual "isWhite empty"
+                    False (isWhite Empty)
+test10 = TestCase $ assertEqual "isBlack black piece"
+                    True (isBlack (Piece Q Black))
+test11 = TestCase $ assertEqual "isBlack white piece"
+                    False (isBlack (Piece B White))
+test12 = TestCase $ assertEqual "isWhite"
+                    False (isBlack Empty)
 
-test5 = TestCase $ assertEqual "getPiece"   
+
+-- Ensures that the function can retrieve a piece from a given location on a board.
+test13 = TestCase $ assertEqual "getPiece"   
                     (Piece R White) (getPiece (1,1) newGame)
+test14 = TestCase $ assertEqual "getPiece empty"
+                    (Empty) (getPiece (4,4) newGame)
 
-test6 = TestCase $ assertEqual "move"
+
+-- Ensures that the function can move a piece correctly and update the board.
+test15 = TestCase $ assertEqual "move"
                     [((1,8),(Piece R Black)), ((2,8),(Piece N Black)), ((3,8),(Piece B Black)), ((4,8),(Piece K Black)), ((5,8),(Piece Q Black)), ((6,8),(Piece B Black)), ((7,8),(Piece N Black)), ((8,8),(Piece R Black)),
                     ((1,7),(Piece P Black)), ((2,7),(Piece P Black)), ((3,7),(Empty)),         ((4,7),(Piece P Black)), ((5,7),(Piece P Black)), ((6,7),(Piece P Black)), ((7,7),(Piece P Black)), ((8,7),(Piece P Black)),
                     ((1,6),(Empty)) ,        ((2,6),(Empty)) ,        ((3,6),(Empty)) ,        ((4,6),(Empty)) ,        ((5,6),(Empty)) ,        ((6,6),(Empty)) ,        ((7,6),(Empty)) ,        ((8,6),(Empty)) ,
@@ -632,10 +680,17 @@ test6 = TestCase $ assertEqual "move"
                     ((1,1),(Piece R White)), ((2,1),(Piece N White)), ((3,1),(Piece B White)), ((4,1),(Piece K White)), ((5,1),(Piece Q White)), ((6,1),(Piece B White)), ((7,1),(Piece N White)), ((8,1),(Piece R White)) ]
                     (move (3,7) (3,5) newGame newGame)
 
-test7 = TestCase $ assertEqual "pieceMove"
+
+-- Checks if the function can retrieve all the valid moves for a given piece
+test16 = TestCase $ assertEqual "pieceMove knight"
                     [(1,3) , (3,3)] (pieceMove (Piece N White) newGame (2,1))
-            
-test8 = TestCase $ assertEqual "findKing"
+test17 = TestCase $ assertEqual "pieceMove pawn"
+                    [(2,3) , (2,4)] (pieceMove (Piece P White) newGame (2,2))
+
+
+-- Checks if the function can locate the king on a given board            
+test18 = TestCase $ assertEqual "findKing"
                     (4,1) (findKing newGame newGame White)
 
-runtests = runTestTT $ TestList [test1 ,test2, test3, test4, test5, test6, test7, test8]
+
+runtests = runTestTT $ TestList [test1 ,test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, test12, test13, test14, test15, test16, test17, test18]
