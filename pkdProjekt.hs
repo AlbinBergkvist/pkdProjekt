@@ -3,7 +3,7 @@
 import Data.List
 import Data.Char
 import Debug.Trace
-import Test.HUnit
+--import Test.HUnit
 
 
 ---------------------------DATA TYPES-------------------------
@@ -480,13 +480,6 @@ kingMoves b color (x,y) = validKing (failSafe [(x,y+1) , (x,y-1) , (x-1,y) , (x-
 validKing [] _ _ = []
 validKing (x:xs) b color = if getColor' x b == color then validKing xs b color else x : validKing xs b color
 
-validK' [] _ _ = []
-validK' (x:xs) b White = if x `elem` listW then validK' xs b White else x : validK' xs b White
-    where 
-        listW = allMoves (allPieces b b Black) b
-validK' (x:xs) b Black = if x `elem` listB then validK' xs b Black else x : validK' xs b Black
-    where 
-        listB = allMoves (allPieces b b White) b
 right b color (x,y) = if getColor' (x+1,y) b  == color then [] else if getColor' (x+1,y) b == None then (x+1,y) : right b color (x+1 ,y)    else [(x+1,y)]
 left b color (x,y) = if getColor' (x-1,y) b == color then [] else if getColor' (x-1,y) b == None then  (x-1,y) : left b color (x-1 ,y)        else [(x-1,y)]
 up b color (x,y) = if getColor' (x,y+1) b == color then [] else if getColor' (x,y+1) b == None then (x, y+1) : up b color (x, y+1)          else [(x,y+1)]
@@ -500,15 +493,14 @@ knightMoves b color (x,y) = knightMoves' b color (x,y) knightList
         knightMoves' _ _ _ [] = []
         knightMoves' b color (x,y) (l:ls) = if getColor' (x+ (fst l) , y+ (snd l)) b == color then [] ++ knightMoves' b color (x,y) ls else [(x+ (fst l) , y+ (snd l))] ++ knightMoves' b color (x,y) ls
         knightList = [((-1),2), (1,2) , (2,1) , (2,(-1)) , (1,(-2)) , ((-1),(-2)) , ((-2),(-1)) , ((-2),1)]
+
 pawnMoveStraight b color (x,y) =    if color == White then if y == 2 then if getColor' (x,y+1) b == None then (x,y+1) : pawnMoveStraight b White (x,y+1) else []
                                     else if getColor' (x,y+1) b == None then (x,y+1) : [] else []
                                     else if  y == 7 then if getColor' (x,y-1) b == None then (x,y-1) : pawnMoveStraight b Black (x,y-1) else []
                                     else if getColor' (x,y-1) b == None then (x,y-1) : [] else []
-
 pawnMoveDiagonal b White (x,y) = if getColor' (x+1,y+1) b == Black then [(x+1,y+1)] ++ pawnMoveDiagonal' b White else [] ++ pawnMoveDiagonal' b White
   where 
   pawnMoveDiagonal' b color = if getColor' (x-1,y+1) b == Black then [(x-1,y+1)] else []
-
 pawnMoveDiagonal b Black (x,y) = if getColor' (x+1,y-1) b == White then [(x+1,y-1)] ++ pawnMoveDiagonal' b Black else [] ++ pawnMoveDiagonal' b Black
   where 
   pawnMoveDiagonal' b color = if getColor' (x-1,y-1) b == White then [(x-1,y-1)] else []
