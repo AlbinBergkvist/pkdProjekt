@@ -1,4 +1,4 @@
-{-Pkd projekt Henrik Jädersten, Nils Hartman, Albin Bergkvist-}
+{-PKD projekt: Group 6: Henrik Jädersten, Nils Hartman, Albin Bergkvist-}
 
 import Data.List
 import Data.Char
