@@ -3,7 +3,7 @@
 import Data.List
 import Data.Char
 import Debug.Trace
---import Test.HUnit
+import Test.HUnit
 
 
 ---------------------------DATA TYPES-------------------------
